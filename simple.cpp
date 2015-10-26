@@ -17,10 +17,42 @@ struct stringMetadata
 	int lineNo;
 };
 
-class readFile
+class regFile
 {
 	public:
-		readFile(char* s) : i((s)) { currentTokenPos = currentLinePos = 0;}
+		int* regBank;
+
+		regFile(int regCount)
+		{
+			regBank = new int[regCount];
+		}
+
+	    regFile()
+		{
+			regBank = new int[16];
+		}
+
+		void store(int regNum, int value)
+		{
+			regBank[regNum] = value;
+		}
+
+		int load(int regNum)
+		{
+			
+			return regBank[regNum];
+		}
+
+		~regFile()
+		{
+			delete regBank;
+		}
+};
+
+class fileReader
+{
+	public:
+		fileReader(char* s) : i((s)) { currentTokenPos = currentLinePos = 0;}
 
 		void getContents()
 		{
@@ -42,15 +74,14 @@ class readFile
 					{			
 						wordStruct.line = word;
 						wordStruct.lineNo = currentLine;
-						// cout << currentLine << endl;
 						tokenList.push_back(wordStruct);
 					}
-			    	// cout << word << endl;
 				}
 				
 				currentLine++;
 			}
 			i.close();
+
 		}
 
 		string getNextToken()
@@ -128,13 +159,16 @@ class readFile
 		int currentLinePos;
 };
 
-void usage(int argc, char* argv[])
+void usage()
 {
 	cout << "Usage: ./simple [inputfile]" << endl;
 	exit(1);
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+	regFile	   r;
+	fileReader f(argv[1]);
+	f.getContents();
 	return 0;
 }
