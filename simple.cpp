@@ -30,14 +30,20 @@ struct stringMetadata
 class regFile
 {
 	public:
+
+		int pc;
+		vector<int> lr;
+
 		regFile(int regCount)
 		{
 			regBank = new int[regCount];
+			lr.push_back(0);
 		}
 
 	    regFile()
 		{
 			regBank = new int[16];
+			lr.push_back(0);
 		}
 
 		void store(int regNum, int value)
@@ -243,6 +249,26 @@ void fillInstructionMemory(fileReader &f, map<int,instructionMemory> &insMem)
 	}
 }
 
+void regs(regFile &r, int regCount)
+{
+	cout << "------------Register Contents------------" << endl;
+
+	int num;
+
+	for (num = 0; num < regCount; num++)
+	{
+		if (num < 10) cout << "r" << num << "      = " << r.load(num) << endl;
+		else cout << "r" << num << "     = " << r.load(num) << endl;
+	}
+
+	cout << "pc" << "      = " << r.pc << endl;
+
+	cout << "lr(top)" << " = " << r.lr.back() << endl;
+
+	cout << "------------------DONE-------------------" << endl;
+
+}
+
 int main(int argc, char* argv[])
 {
 	if (argc <2)
@@ -250,13 +276,14 @@ int main(int argc, char* argv[])
 		usage();
 		exit(1);
 	}
-
+	int regCount = 20;
 	std::map<int,instructionMemory> insMem;
 	std::map<int,int> dataMem;
-	regFile	   r;
+	regFile	   r(regCount);
 	fileReader f(argv[1]);
 	f.getContents();
 	fillInstructionMemory(f,insMem);
+	regs(r,regCount);
 	// cout << insMem[12].insName << endl;
 	return 0;
 }
