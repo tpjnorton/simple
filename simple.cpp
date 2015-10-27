@@ -35,34 +35,33 @@ class regFile
 
 		int pc;
 		vector<int> lr;
-        int defRegCount;
 
-		regFile(int regCount)
-		{
-			regBank = new int[regCount];
-			lr.push_back(0);
+        regFile(int regCount)
+        {
+            regBank = new int[regCount];
+            lr.push_back(0);
             defRegCount = regCount;
-			pc = baseAddress;
-		}
+            pc = baseAddress;
+        }
 
-	    regFile()
-		{
+        regFile()
+        {
             defRegCount = 16;
             regBank = new int[defRegCount];
-			lr.push_back(0);
-			pc = baseAddress;
-		}
+            lr.push_back(0);
+            pc = baseAddress;
+        }
 
-		void store(int regNum, int value)
-		{
-			regBank[regNum] = value;
-		}
+        void store(int regNum, int value)
+        {
+            regBank[regNum] = value;
+        }
 
-		int load(int regNum)
-		{
-			
-			return regBank[regNum];
-		}
+        int load(int regNum)
+        {
+            
+            return regBank[regNum];
+        }
 
         void clear()
         {
@@ -70,19 +69,20 @@ class regFile
             {
                 regBank[i] = 0;
             }
-            
+
             lr.clear();
             lr.push_back(0);
             pc = baseAddress;   
         }
 
-		~regFile()
-		{
-			delete regBank;
-		}
+        ~regFile()
+        {
+            delete regBank;
+        }
 
-	private:
-		int* regBank;
+    private:
+        int* regBank;
+        int defRegCount;
 };
 
 class fileReader
@@ -275,14 +275,14 @@ void regs(regFile &r, int regCount)
 
 	for (num = 0; num < regCount; num++)
 	{
-		if (num < 10) cout << "r" << num << "      = " << r.load(num) << endl;
-		else cout << "r" << num << "     = " << r.load(num) << endl;
+		if (num < 10) cout << "r" << num << "     == " << r.load(num) << endl;
+		else cout << "r" << num << "    == " << r.load(num) << endl;
 	}
 
-	cout << "pc" << "      = " << r.pc << endl;
-	cout << "lr(top)" << " = " << r.lr.back() << endl;
+	cout << "pc" << "     == " << r.pc << endl;
+	cout << "lr(top)" << "== " << r.lr.back() << endl;
 
-	cout << "------------------DONE-------------------" << endl;
+	cout << "------------------////-------------------" << endl;
 }
 
 int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r)
@@ -658,7 +658,12 @@ void run(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
 
 void help()
 {
-
+    cout << "--------------------------------------------------------------" << endl;
+    cout << "help  || HELP  - Displays all available commands." << endl << endl;
+    cout << "run   || RUN   - executes instructions until STOP." << endl << endl;
+    cout << "reset || RESET - clears registers and memory, resets pc and lr." << endl << endl;
+    cout << "step [numSteps] || STEP [numSteps] - executes 'numSteps' instructions." << endl << endl;
+    cout << "exit  || EXIT || quit || QUIT  - exits simulator." << endl << endl;
 }
 
 int parseInput(string s, std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, int regCount)
@@ -691,7 +696,7 @@ int parseInput(string s, std::map<int,int> &dataMem, std::map<int,instructionMem
 
     else
     {
-        cout << "Unrecognized command" << endl;
+        cout << "Unrecognized command, type 'help' for a list of available commands." << endl;
     } 
 
 	return 0;
@@ -705,7 +710,7 @@ int main(int argc, char* argv[])
 		usage();
 		exit(1);
 	}
-	int regCount = 20;
+	int regCount = 16;
 	std::map<int,instructionMemory> insMem;
 	std::map<int,int> dataMem;
 	regFile	   r(regCount);
