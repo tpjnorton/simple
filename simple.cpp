@@ -12,6 +12,7 @@
 using namespace std;
 
 int currentLine = 1;
+int baseAddress = 0x00;
 
 struct instructionMemory
 {
@@ -34,19 +35,22 @@ class regFile
 
 		int pc;
 		vector<int> lr;
+        int defRegCount;
 
 		regFile(int regCount)
 		{
 			regBank = new int[regCount];
 			lr.push_back(0);
-			pc = 0x00;
+            defRegCount = regCount;
+			pc = baseAddress;
 		}
 
 	    regFile()
 		{
-			regBank = new int[16];
+            defRegCount = 16;
+            regBank = new int[defRegCount];
 			lr.push_back(0);
-			pc = 0x00;
+			pc = baseAddress;
 		}
 
 		void store(int regNum, int value)
@@ -59,6 +63,18 @@ class regFile
 			
 			return regBank[regNum];
 		}
+
+        void clear()
+        {
+            for (int i = 0; i< defRegCount; i++)
+            {
+                regBank[i] = 0;
+            }
+            
+            lr.clear();
+            lr.push_back(0);
+            pc = baseAddress;   
+        }
 
 		~regFile()
 		{
@@ -188,7 +204,7 @@ void usage()
 
 void fillInstructionMemory(fileReader &f, map<int,instructionMemory> &insMem)
 {
-	int address = 0x00;
+	int address = baseAddress;
 	while (f.hasMoreTokens())
 	{
 		string word = f.getNextToken();
@@ -640,6 +656,48 @@ void run(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
  	while (step(dataMem, insMem, r, 1) != 1) {};
 }
 
+void help()
+{
+
+}
+
+int parseInput(string s, std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, int regCount)
+{
+	if (s == "exit" || s == "EXIT" || s == "quit" || s == "QUIT")
+	{
+		return -1;
+	}
+
+    else if (s == "run" || s == "RUN")
+	{
+		run(dataMem, insMem, r);
+	}
+
+	else if (s == "regs" || s == "REGS")
+	{
+		regs(r, regCount);
+	}
+
+	else if (s == "help" || s == "HELP")
+	{
+		help();
+	}
+
+    else if (s == "reset" || s == "reset")
+    {
+        dataMem.clear();
+        r.clear();
+    }
+
+    else
+    {
+        cout << "Unrecognized command" << endl;
+    } 
+
+	return 0;
+
+}
+
 int main(int argc, char* argv[])
 {
 	if (argc <2)
@@ -654,8 +712,20 @@ int main(int argc, char* argv[])
 	fileReader f(argv[1]);
 	f.getContents();
 	fillInstructionMemory(f,insMem);
-	run(dataMem, insMem, r);
-	regs(r,regCount);
+	cout << "-----------Simple: A simple scalar processor simulator---------" << endl;
+	int exitflag = 0;
+	string s;
+	while (exitflag == 0)
+	{
+		cout << ">> ";
+        cin >> s;
+        if (s == "step" || s == "STEP")
+        {
+          cin >> s;
+          step(dataMem,insMem,r,atoi(s.c_str()));
+        }
+        else exitflag = parseInput(s, dataMem, insMem, r, regCount);
+	}
 	// cout << insMem[12].insName << endl;
 	return 0;
 }

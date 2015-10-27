@@ -1,4 +1,4 @@
-instruction set
+instruction set + syntax
 
 -nop
 -stop
@@ -17,10 +17,10 @@ instruction set
 -xor dest source1 source2
 -not dest source 
 
--shiftla dest source  imm
--shiftll dest source  imm
--shiftra dest source  imm
--shiftrl dest source  imm
+-shiftla dest source imm
+-shiftll dest source imm
+-shiftra dest source imm
+-shiftrl dest source imm
 
 -loadr dest source addr
 -loadi  dest addr
@@ -32,4 +32,4 @@ blth source addr
 -jump addr
 -call addr
 
-cmp dest source1 source2
+-cmp dest source1 source2
