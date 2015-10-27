@@ -7,4 +7,3 @@ clean:
 remake:
 	rm -f build/simple
 	g++ -O3 -Wall simple.cpp -o build/simple
-

@@ -6,10 +6,20 @@
 #include <fstream>
 #include <sstream>
 #include <unistd.h>
+#include <map>
 
 using namespace std;
 
 int currentLine = 1;
+
+struct instructionMemory
+{
+	string insName;
+	string arg1;
+	string arg2;
+	string arg3;
+};
+
 
 struct stringMetadata
 {
@@ -20,8 +30,6 @@ struct stringMetadata
 class regFile
 {
 	public:
-		int* regBank;
-
 		regFile(int regCount)
 		{
 			regBank = new int[regCount];
@@ -47,6 +55,9 @@ class regFile
 		{
 			delete regBank;
 		}
+
+	private:
+		int* regBank;
 };
 
 class fileReader
@@ -161,14 +172,91 @@ class fileReader
 
 void usage()
 {
-	cout << "Usage: ./simple [inputfile]" << endl;
+	cout << endl << "Usage: ./simple [inputfile]" << endl;
+	cout << endl << "No input arguments specified!" << endl << endl;
 	exit(1);
+}
+
+void fillInstructionMemory(fileReader &f, map<int,instructionMemory> &insMem)
+{
+	int address = 0x00;
+	while (f.hasMoreTokens())
+	{
+		string word = f.getNextToken();
+		// cout << word << endl;
+
+		if (word == "ADDI" || word == "ADDR" || word == "SUBI" || word == "SUBR" || word == "CMP" || word == "LOADR")
+		{
+			insMem[address].insName = word;
+			word = f.getNextToken();
+			insMem[address].arg1 = word;
+			word = f.getNextToken();
+			insMem[address].arg2 = word;
+			word = f.getNextToken();
+			insMem[address].arg3 = word;
+		}
+
+		else if (word == "AND" || word == "OR" || word == "XOR" || word == "SHIFTLA" || word == "SHIFTLL" || word == "SHIFTRA" || word == "SHIFTRL")
+		{
+			insMem[address].insName = word;
+			word = f.getNextToken();
+			insMem[address].arg1 = word;
+			word = f.getNextToken();
+			insMem[address].arg2 = word;
+			word = f.getNextToken();
+			insMem[address].arg3 = word;
+		}
+
+		else if (word == "MULI" || word == "MULR" || word == "XOR" || word == "SHIFTLA" || word == "SHIFTLL" || word == "SHIFTRA" || word == "SHIFTRL")
+		{
+			insMem[address].insName = word;
+			word = f.getNextToken();
+			insMem[address].arg1 = word;
+			word = f.getNextToken();
+			insMem[address].arg2 = word;
+			word = f.getNextToken();
+			insMem[address].arg3 = word;
+		}
+
+		else if (word == "BLTH" || word == "MOVI" || word == "LOADI" || word == "STOREI" || word == "STORER" || word == "NOT")
+		{
+			insMem[address].insName = word;
+			word = f.getNextToken();
+			insMem[address].arg1 = word;
+			word = f.getNextToken();
+			insMem[address].arg2 = word;
+		}
+
+		else if (word == "B" || word == "J" || word == "LOADI" || word == "CALL")
+		{
+			insMem[address].insName = word;
+			word = f.getNextToken();
+			insMem[address].arg1 = word;
+		}
+
+		else if (word == "NOP" || word == "STOP" || word == "RETURN")
+		{
+			insMem[address].insName = word;
+		}
+
+		address += 4;
+	}
 }
 
 int main(int argc, char* argv[])
 {
+	if (argc <2)
+	{
+		usage();
+		exit(1);
+	}
+
+	std::map<int,instructionMemory> insMem;
+	std::map<int,int> dataMem;
 	regFile	   r;
 	fileReader f(argv[1]);
 	f.getContents();
+	fillInstructionMemory(f,insMem);
+	// cout << insMem[12].insName << endl;
 	return 0;
 }
