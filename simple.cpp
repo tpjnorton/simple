@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <string>
 #include <sstream>
 #include <unistd.h>
 #include <map>
@@ -38,12 +39,14 @@ class regFile
 		{
 			regBank = new int[regCount];
 			lr.push_back(0);
+			pc = 0x00;
 		}
 
 	    regFile()
 		{
 			regBank = new int[16];
 			lr.push_back(0);
+			pc = 0x00;
 		}
 
 		void store(int regNum, int value)
@@ -251,9 +254,8 @@ void fillInstructionMemory(fileReader &f, map<int,instructionMemory> &insMem)
 
 void regs(regFile &r, int regCount)
 {
-	cout << "------------Register Contents------------" << endl;
-
 	int num;
+	cout << "------------Register Contents------------" << endl;
 
 	for (num = 0; num < regCount; num++)
 	{
@@ -262,11 +264,267 @@ void regs(regFile &r, int regCount)
 	}
 
 	cout << "pc" << "      = " << r.pc << endl;
-
 	cout << "lr(top)" << " = " << r.lr.back() << endl;
 
 	cout << "------------------DONE-------------------" << endl;
+}
 
+int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r)
+{
+	
+//----------------Arithmetic Instructions----------------//
+
+	if (insMem[r.pc].insName == "MOVI")
+	{
+		string word = insMem[r.pc].arg1;
+		word.erase(0, 1);
+		int dest = atoi(word.c_str());
+		string imm = insMem[r.pc].arg2;
+		int val = atoi(imm.c_str());
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "ADDI")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source = atoi(word2.c_str());
+		string imm = insMem[r.pc].arg3;
+		int val = r.load(source) + atoi(imm.c_str());
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "ADDR")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source1 = atoi(word2.c_str());
+
+		string word3 = insMem[r.pc].arg3;
+		word3.erase(0, 1);
+		int source2 = atoi(word3.c_str());
+
+		int val = r.load(source1) + r.load(source2);
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "SUBI")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source = atoi(word2.c_str());
+		string imm = insMem[r.pc].arg3;
+		int val = r.load(source) - atoi(imm.c_str());
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "SUBR")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source1 = atoi(word2.c_str());
+
+		string word3 = insMem[r.pc].arg3;
+		word3.erase(0, 1);
+		int source2 = atoi(word3.c_str());
+
+		int val = r.load(source1) - r.load(source2);
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "MULI")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source = atoi(word2.c_str());
+		string imm = insMem[r.pc].arg3;
+		int val = r.load(source) * atoi(imm.c_str());
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "MULR")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source1 = atoi(word2.c_str());
+
+		string word3 = insMem[r.pc].arg3;
+		word3.erase(0, 1);
+		int source2 = atoi(word3.c_str());
+
+		int val = r.load(source1) * r.load(source2);
+		r.store(dest,val);
+	}
+
+//----------------Logical Operators----------------//
+
+	else if (insMem[r.pc].insName == "AND")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source1 = atoi(word2.c_str());
+
+		string word3 = insMem[r.pc].arg3;
+		word3.erase(0, 1);
+		int source2 = atoi(word3.c_str());
+
+		int val = r.load(source1) & r.load(source2);
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "OR")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source1 = atoi(word2.c_str());
+
+		string word3 = insMem[r.pc].arg3;
+		word3.erase(0, 1);
+		int source2 = atoi(word3.c_str());
+
+		int val = r.load(source1) | r.load(source2);
+		r.store(dest,val);
+	}
+
+    else if (insMem[r.pc].insName == "XOR")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source1 = atoi(word2.c_str());
+
+		string word3 = insMem[r.pc].arg3;
+		word3.erase(0, 1);
+		int source2 = atoi(word3.c_str());
+
+		int val = r.load(source1) ^ r.load(source2);
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "NOT")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source1 = atoi(word2.c_str());
+
+		int val = ~(r.load(source1));
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "SHIFTLL")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source = atoi(word2.c_str());
+		string imm = insMem[r.pc].arg3;
+		unsigned val = r.load(source) << atoi(imm.c_str());
+		r.store(dest,(int)val);
+	}
+
+	else if (insMem[r.pc].insName == "SHIFTLA")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source = atoi(word2.c_str());
+		string imm = insMem[r.pc].arg3;
+		int val = r.load(source) << atoi(imm.c_str());
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "SHIFTRL")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source = atoi(word2.c_str());
+		string imm = insMem[r.pc].arg3;
+		unsigned val = r.load(source) >> atoi(imm.c_str());
+		r.store(dest,(int)val);
+	}
+
+	else if (insMem[r.pc].insName == "SHIFTRA")
+	{
+		string word1 = insMem[r.pc].arg1;
+		word1.erase(0, 1);
+		int dest = atoi(word1.c_str());
+	    string word2 = insMem[r.pc].arg2;
+		word2.erase(0, 1);
+		int source = atoi(word2.c_str());
+		string imm = insMem[r.pc].arg3;
+		int val = r.load(source) >> atoi(imm.c_str());
+		r.store(dest,val);
+	}
+
+	else if (insMem[r.pc].insName == "STOP")
+	{
+		return 1;
+	}
+
+	else if (insMem[r.pc].insName == "NOP") {}
+
+	r.pc += 4;
+	return 0;
+}
+
+int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, int count)
+{
+  	for (int i = 0; i< count; i++)
+  	{
+  		int j = fdx(dataMem, insMem, r);
+
+  		if (j == 1) return 1;
+  	}
+
+  	return 0;
+}
+
+void run(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r)
+{
+ 	while (step(dataMem, insMem, r, 1) != 1) {};
 }
 
 int main(int argc, char* argv[])
@@ -283,6 +541,7 @@ int main(int argc, char* argv[])
 	fileReader f(argv[1]);
 	f.getContents();
 	fillInstructionMemory(f,insMem);
+	run(dataMem, insMem, r);
 	regs(r,regCount);
 	// cout << insMem[12].insName << endl;
 	return 0;

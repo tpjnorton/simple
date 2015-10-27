@@ -2,7 +2,7 @@ instruction set
 
 -nop
 -stop
--return
+return
 
 -movi  dest imm
 -addi  dest source  imm 
@@ -11,7 +11,7 @@ instruction set
 -subr  dest source1 source2
 -muli  dest source  imm
 -mulr  dest source1 source2
--loadr dest source addr
+loadr dest source addr
 
 -and dest source1 source2
 -or  dest source1 source2
@@ -27,9 +27,9 @@ instruction set
 -storer source addr
 -storei imm addr
 
--branch addr
--blth source addr
--jump addr
--call addr
+branch addr
+blth source addr
+jump addr
+call addr
 
--cmp dest source1 source2
+cmp dest source1 source2
