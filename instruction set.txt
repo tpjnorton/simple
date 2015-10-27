@@ -11,7 +11,6 @@ return
 -subr  dest source1 source2
 -muli  dest source  imm
 -mulr  dest source1 source2
-loadr dest source addr
 
 -and dest source1 source2
 -or  dest source1 source2
@@ -23,9 +22,10 @@ loadr dest source addr
 -shiftra dest source  imm
 -shiftrl dest source  imm
 
+-loadr dest source addr
 -loadi  dest addr
--storer source addr
--storei imm addr
+-storer source source addr
+-storei source addr imm
 
 branch addr
 blth source addr
