@@ -571,7 +571,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 	else if (insMem[r.pc].insName == "CALL")
 	{
 		r.lr.push_back(r.pc);
-		r.pc = atoi(insMem[r.pc].arg1.c_str());	
+		r.pc = atoi(insMem[r.pc].arg1.c_str()) - 4;	
 	}
 
     else if (insMem[r.pc].insName == "RETURN")
@@ -582,14 +582,14 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 
 	else if (insMem[r.pc].insName == "JUMP")
 	{
-		r.pc = atoi(insMem[r.pc].arg1.c_str());	
+		r.pc = atoi(insMem[r.pc].arg1.c_str() - 4);	
 	}
 
 	else if (insMem[r.pc].insName == "BRANCH")
 	{
 		string word = insMem[r.pc].arg1;
 		word.erase(0,1);
-		r.pc = atoi(word.c_str()) + atoi(insMem[r.pc].arg2.c_str());	
+		r.pc = atoi(word.c_str()) + atoi(insMem[r.pc].arg2.c_str()) - 4;	
 	}
 
 	else if (insMem[r.pc].insName == "CMP")
