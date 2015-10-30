@@ -243,7 +243,7 @@ void fillInstructionMemory(fileReader &f, map<int,instructionMemory> &insMem)
 			insMem[address].arg3 = word;
 		}
 
-		else if (word == "BLTH" || word == "MOVI" || word == "LOADI" || word == "NOT")
+		else if (word == "BEQ" || word == "MOVI" || word == "LOADI" || word == "NOT")
 		{
 			insMem[address].insName = word;
 			word = f.getNextToken();
@@ -252,11 +252,12 @@ void fillInstructionMemory(fileReader &f, map<int,instructionMemory> &insMem)
 			insMem[address].arg2 = word;
 		}
 
-		else if (word == "BRANCH" || word == "JUMP" || word == "CALL")
+		else if (word == "JUMP" || word == "CALL")
 		{
 			insMem[address].insName = word;
 			word = f.getNextToken();
 			insMem[address].arg1 = word;
+            cout << word << endl;
 		}
 
 		else if (word == "NOP" || word == "STOP" || word == "RETURN")
@@ -287,10 +288,12 @@ void regs(regFile &r, int regCount)
 
 int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r)
 {
-	
+	string instructionName = insMem[r.pc].insName;
+    // cout << instructionName << endl;
+
 	//----------------Arithmetic Instructions----------------//
 
-	if (insMem[r.pc].insName == "MOVI")
+	if (instructionName == "MOVI")
 	{
 		string word = insMem[r.pc].arg1;
 		word.erase(0, 1);
@@ -300,7 +303,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "ADDI")
+	else if (instructionName == "ADDI")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -313,7 +316,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "ADDR")
+	else if (instructionName == "ADDR")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -331,7 +334,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "SUBI")
+	else if (instructionName == "SUBI")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -344,7 +347,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "SUBR")
+	else if (instructionName == "SUBR")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -362,7 +365,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "MULI")
+	else if (instructionName == "MULI")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -375,7 +378,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "MULR")
+	else if (instructionName == "MULR")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -395,7 +398,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 
 	//----------------Logical Operators----------------//
 
-	else if (insMem[r.pc].insName == "AND")
+	else if (instructionName == "AND")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -413,7 +416,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "OR")
+	else if (instructionName == "OR")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -431,7 +434,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-    else if (insMem[r.pc].insName == "XOR")
+    else if (instructionName == "XOR")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -449,7 +452,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "NOT")
+	else if (instructionName == "NOT")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -463,7 +466,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "SHIFTLL")
+	else if (instructionName == "SHIFTLL")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -476,7 +479,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,(int)val);
 	}
 
-	else if (insMem[r.pc].insName == "SHIFTLA")
+	else if (instructionName == "SHIFTLA")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -489,7 +492,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "SHIFTRL")
+	else if (instructionName == "SHIFTRL")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -502,7 +505,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,(int)val);
 	}
 
-	else if (insMem[r.pc].insName == "SHIFTRA")
+	else if (instructionName == "SHIFTRA")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -517,7 +520,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 
 	//----------------LOAD/STORE Instructions----------------//
 
-    else if (insMem[r.pc].insName == "LOADR")
+    else if (instructionName == "LOADR")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -527,72 +530,80 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		int source = atoi(word2.c_str());
 		string imm = insMem[r.pc].arg3;
 		unsigned val = r.load(source) + atoi(imm.c_str());
-		r.store(dest,dataMem[val && 0XFFFFFF00]);
+        cout << val << endl;
+		r.store(dest,dataMem[val]);
 	}
 
-	if (insMem[r.pc].insName == "LOADI")
+	if (instructionName == "LOADI")
 	{
 		string word = insMem[r.pc].arg1;
 		word.erase(0, 1);
 		int dest = atoi(word.c_str());
 		string imm = insMem[r.pc].arg2;
 		int val = atoi(imm.c_str());
-		r.store(dest,dataMem[val && 0XFFFFFF00]);
+		r.store(dest,dataMem[val]);
 	}
 
-	if (insMem[r.pc].insName == "STOREI")
+	if (instructionName == "STOREI")
 	{
 		string word = insMem[r.pc].arg1;
 		word.erase(0, 1);
 		int source = atoi(word.c_str());
 		string addr = insMem[r.pc].arg2;
 		int val = r.load(source) + atoi(addr.c_str());
+        // cout << val << endl;
 		string imm = insMem[r.pc].arg3;
-		dataMem[val && 0XFFFFFF00] = atoi(imm.c_str());
+		dataMem[val] = atoi(imm.c_str());
 	}
 
-	if (insMem[r.pc].insName == "STORER")
+	if (instructionName == "STORER")
 	{
 		string word = insMem[r.pc].arg1;
 		word.erase(0, 1);
 		int source = atoi(word.c_str());
 
 		string word2 = insMem[r.pc].arg2;
+        word2.erase(0, 1);
 		int source2 = atoi(word2.c_str());
 
 		string addr = insMem[r.pc].arg3;
 		int val = r.load(source2) + atoi(addr.c_str());
 
-		dataMem[val && 0XFFFFFF00] = r.load(source);
+		dataMem[val] = r.load(source);
 	}
 
 	//---------------Control Flow Instructions-----------//
 
-	else if (insMem[r.pc].insName == "CALL")
+	else if (instructionName == "CALL")
 	{
 		r.lr.push_back(r.pc);
 		r.pc = atoi(insMem[r.pc].arg1.c_str()) - 4;	
 	}
 
-    else if (insMem[r.pc].insName == "RETURN")
+    else if (instructionName == "RETURN")
 	{
 		r.pc = r.lr.back();
 		r.lr.pop_back();	
 	}
 
-	else if (insMem[r.pc].insName == "JUMP")
+	else if (instructionName == "JUMP")
 	{
-		r.pc = atoi(insMem[r.pc].arg1.c_str() - 4);	
+		cout << insMem[r.pc].arg1 << endl;
+        int x = atoi(insMem[r.pc].arg1.c_str()) - 4;
+        cout << x << endl;	
+        r.pc = x;
 	}
 
-	else if (insMem[r.pc].insName == "BRANCH")
+	else if (instructionName == "BEQ")
 	{
 		string word = insMem[r.pc].arg1;
 		word.erase(0,1);
-		r.pc = atoi(word.c_str()) + atoi(insMem[r.pc].arg2.c_str()) - 4;	
+        int reg = atoi(word.c_str());
+        int val = r.load(reg);
+        if (val == 0) r.pc = atoi(insMem[r.pc].arg2.c_str()) - 4;	
 	}
 
-	else if (insMem[r.pc].insName == "CMP")
+	else if (instructionName == "CMP")
 	{
 		string word1 = insMem[r.pc].arg1;
 		word1.erase(0, 1);
@@ -626,12 +637,12 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		r.store(dest,val);
 	}
 
-	else if (insMem[r.pc].insName == "STOP")
+	else if (instructionName == "STOP")
 	{
 		return 1;
 	}
 
-	else if (insMem[r.pc].insName == "NOP") {}
+	else if (instructionName == "NOP") {}
 
     // cout << "pc = " << r.pc << endl;
 	r.pc += 4;
@@ -663,7 +674,8 @@ void help()
     cout << "run   || RUN   - executes instructions until STOP." << endl << endl;
     cout << "reset || RESET - clears registers and memory, resets pc and lr." << endl << endl;
     cout << "step [numSteps] || STEP [numSteps] - executes 'numSteps' instructions." << endl << endl;
-    cout << "exit  || EXIT || quit || QUIT  - exits simulator." << endl << endl;
+    cout << "exit  || EXIT || quit || QUIT  - exits simulator." << endl;
+    cout << "--------------------------------------------------------------" << endl;
 }
 
 int parseInput(string s, std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, int regCount)
@@ -731,6 +743,7 @@ int main(int argc, char* argv[])
         }
         else exitflag = parseInput(s, dataMem, insMem, r, regCount);
 	}
+    cout << "Goodbye!" << endl;
 	// cout << insMem[12].insName << endl;
 	return 0;
 }

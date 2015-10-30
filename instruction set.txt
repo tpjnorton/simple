@@ -28,7 +28,7 @@ instruction set + syntax
 -storei source addr imm
 
 -branch addr
-blth source addr
+-beq source addr
 -jump addr
 -call addr
 
