@@ -257,7 +257,7 @@ void fillInstructionMemory(fileReader &f, map<int,instructionMemory> &insMem)
 			insMem[address].insName = word;
 			word = f.getNextToken();
 			insMem[address].arg1 = word;
-            cout << word << endl;
+            // cout << word << endl;
 		}
 
 		else if (word == "NOP" || word == "STOP" || word == "RETURN")
@@ -530,7 +530,7 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 		int source = atoi(word2.c_str());
 		string imm = insMem[r.pc].arg3;
 		unsigned val = r.load(source) + atoi(imm.c_str());
-        cout << val << endl;
+        // cout << val << endl;
 		r.store(dest,dataMem[val]);
 	}
 
@@ -588,9 +588,9 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 
 	else if (instructionName == "JUMP")
 	{
-		cout << insMem[r.pc].arg1 << endl;
+		// cout << insMem[r.pc].arg1 << endl;
         int x = atoi(insMem[r.pc].arg1.c_str()) - 4;
-        cout << x << endl;	
+        // cout << x << endl;	
         r.pc = x;
 	}
 
