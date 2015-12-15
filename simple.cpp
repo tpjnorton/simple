@@ -28,6 +28,9 @@ struct pipelineStage
     int arg1;
     int arg2;
     int arg3;
+    int arg1RegNum;
+    int arg2RegNum;
+    int arg3RegNum;
 };
 
 struct stringMetadata
@@ -63,6 +66,10 @@ class pipeline
             executeStagePart1.arg1    = decodeStagePart2.arg1;
             executeStagePart1.arg2    = decodeStagePart2.arg2;
             executeStagePart1.arg3    = decodeStagePart2.arg3;
+
+            executeStagePart1.arg1RegNum    = decodeStagePart2.arg1RegNum;
+            executeStagePart1.arg2RegNum    = decodeStagePart2.arg2RegNum;
+            executeStagePart1.arg3RegNum    = decodeStagePart2.arg3RegNum;
 
             decodeStagePart1.insName = fetchStage.insName;
             decodeStagePart1.arg1    = fetchStage.arg1;
@@ -351,7 +358,10 @@ int decode(regFile &r, pipeline &p)
     p.decodeStagePart2.insName = p.decodeStagePart1.insName;
     p.decodeStagePart2.arg1 = 0;
     p.decodeStagePart2.arg2 = 0;
-    p.decodeStagePart2.arg3 = 0;  
+    p.decodeStagePart2.arg3 = 0;
+    p.decodeStagePart2.arg1RegNum = -2;
+    p.decodeStagePart2.arg2RegNum = -2;
+    p.decodeStagePart2.arg3RegNum = -2;   
     string instructionName = p.decodeStagePart2.insName;
 
     //----------------Arithmetic Instructions----------------//
@@ -374,6 +384,8 @@ int decode(regFile &r, pipeline &p)
         string word2 = p.decodeStagePart1.arg2;
         word2.erase(0, 1);
         p.decodeStagePart2.arg2 = r.load(atoi(word2.c_str()));
+        cout << "value of register: " << p.decodeStagePart2.arg2 << endl;
+        p.decodeStagePart2.arg2RegNum = atoi(word2.c_str());
         string imm = p.decodeStagePart1.arg3;
         p.decodeStagePart2.arg3 = atoi(imm.c_str());  
     }
@@ -388,10 +400,12 @@ int decode(regFile &r, pipeline &p)
         string word2 = p.decodeStagePart1.arg2;
         word2.erase(0, 1);
         p.decodeStagePart2.arg2  = r.load(atoi(word2.c_str()));
+        p.decodeStagePart2.arg2RegNum = atoi(word2.c_str());
 
         string word3 = p.decodeStagePart1.arg3;
         word3.erase(0, 1);
         p.decodeStagePart2.arg3 = r.load(atoi(word3.c_str()));
+        p.decodeStagePart2.arg3RegNum = atoi(word3.c_str());
         
     }
 
@@ -407,6 +421,7 @@ int decode(regFile &r, pipeline &p)
 
         string imm = p.decodeStagePart1.arg2;
         p.decodeStagePart2.arg2 = r.load(atoi(imm.c_str()));
+        p.decodeStagePart2.arg2RegNum = atoi(imm.c_str());
         
     }
 
@@ -419,6 +434,7 @@ int decode(regFile &r, pipeline &p)
         string word2 = p.decodeStagePart1.arg2;
         word2.erase(0, 1);
         p.decodeStagePart2.arg2 = r.load(atoi(word2.c_str()));
+        p.decodeStagePart2.arg2RegNum = atoi(word2.c_str());
         string imm = p.decodeStagePart1.arg3;
         p.decodeStagePart2.arg3 = atoi(imm.c_str());      
     }
@@ -430,6 +446,7 @@ int decode(regFile &r, pipeline &p)
         string word1 = p.decodeStagePart1.arg1;
         word1.erase(0, 1);
         p.decodeStagePart2.arg1 = r.load(atoi(word1.c_str()));
+        p.decodeStagePart2.arg1RegNum = atoi(word1.c_str());
         string word2 = p.decodeStagePart1.arg2;
         p.decodeStagePart2.arg2 = atoi(word2.c_str());
         string imm = p.decodeStagePart1.arg3;
@@ -441,13 +458,17 @@ int decode(regFile &r, pipeline &p)
         string word1 = p.decodeStagePart1.arg1;
         word1.erase(0, 1);
         p.decodeStagePart2.arg1 = r.load(atoi(word1.c_str()));
+        p.decodeStagePart2.arg1RegNum = atoi(word1.c_str());
 
         string word2 = p.decodeStagePart1.arg2;
         word2.erase(0, 1);
         p.decodeStagePart2.arg2 = r.load(atoi(word2.c_str()));
+        p.decodeStagePart2.arg2RegNum = atoi(word2.c_str());
+
         string imm = p.decodeStagePart1.arg3;
         imm.erase(0, 1);
         p.decodeStagePart2.arg3 = r.load(atoi(imm.c_str()));
+        p.decodeStagePart2.arg3RegNum = atoi(imm.c_str());
     }
 
     else if (instructionName == "LOADR")
@@ -455,11 +476,13 @@ int decode(regFile &r, pipeline &p)
         string word1 = p.decodeStagePart1.arg1;
         word1.erase(0, 1);
         p.decodeStagePart2.arg1 = atoi(word1.c_str());
+
         string word2 = p.decodeStagePart1.arg2;
         word2.erase(0, 1);
         p.decodeStagePart2.arg2 = r.load(atoi(word2.c_str()));
+        p.decodeStagePart2.arg2RegNum = atoi(word2.c_str());
+
         string imm = p.decodeStagePart1.arg3;
-        cout << "japoigjadog: " << p.decodeStagePart1.arg3 << endl;
         p.decodeStagePart2.arg3 = atoi(imm.c_str());
     }
 
@@ -471,6 +494,7 @@ int decode(regFile &r, pipeline &p)
         word.erase(0,1);
         int reg = atoi(word.c_str());
         p.decodeStagePart2.arg1 = r.load(reg);
+        p.decodeStagePart2.arg1RegNum = reg;
         p.decodeStagePart2.arg2 = atoi(p.decodeStagePart1.arg2.c_str());   
     }
 
@@ -493,6 +517,31 @@ int decode(regFile &r, pipeline &p)
 
 int execute(std::map<int,int> &dataMem, regFile &r, pipeline &p)
 {
+    
+    if (p.executeStagePart2.insName != "NOP" && p.executeStagePart2.insName != "STOP" && p.executeStagePart2.insName != "RETURN")
+    {
+        if (p.executeStagePart1.arg1RegNum == p.executeStagePart2.arg1)
+        {
+            p.executeStagePart1.arg1 = p.executeStagePart2.arg2;
+            cout << "Dependency issue, reloading register in argument 1" << endl;
+        }
+
+        if (p.executeStagePart1.arg2RegNum == p.executeStagePart2.arg1)
+        {
+            p.executeStagePart1.arg2 = p.executeStagePart2.arg2;
+            cout << "Dependency issue, reloading register in argument 2" << endl;
+        }
+
+        if (p.executeStagePart1.arg3RegNum == p.executeStagePart2.arg1)
+        {
+            p.executeStagePart1.arg3 = p.executeStagePart2.arg2;
+            cout << "Dependency issue, reloading register in argument 3" << endl;
+        }    
+
+    }
+
+    // else if (p.executeStagePart2.insName != "BEQ" && p.executeStagePart2.insName != "STORER" && p.executeStagePart2.insName != "STOREI")
+
     p.executeStagePart2.insName = p.executeStagePart1.insName;
     p.executeStagePart2.arg1 = 0;
     p.executeStagePart2.arg2 = 0;
@@ -614,8 +663,10 @@ int execute(std::map<int,int> &dataMem, regFile &r, pipeline &p)
     if (instructionName == "STOREI")
     {
         p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
-        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 + p.executeStagePart1.arg3;
-        dataMem[p.executeStagePart2.arg1] = p.executeStagePart2.arg2;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg1 + p.executeStagePart1.arg2;
+        cout << "address to store in: " << p.executeStagePart2.arg2 << endl;
+        dataMem[p.executeStagePart2.arg2] = p.executeStagePart1.arg3;
+        cout << "value stored: " << p.executeStagePart1.arg3 << endl;
     }
 
     if (instructionName == "STORER")
@@ -631,8 +682,8 @@ int execute(std::map<int,int> &dataMem, regFile &r, pipeline &p)
 
     else if (instructionName == "CALL")
     {
-        r.lr.push_back(r.pc);
-        r.pc = p.executeStagePart1.arg2; 
+        r.lr.push_back(r.pc - 4);
+        r.pc = p.executeStagePart1.arg1; 
         p.flush();
     }
 
@@ -692,6 +743,10 @@ int execute(std::map<int,int> &dataMem, regFile &r, pipeline &p)
     }
 
     else if (instructionName == "NOP") {}
+
+    p.executeStagePart2.arg1RegNum = p.executeStagePart1.arg1RegNum;
+    p.executeStagePart2.arg2RegNum = p.executeStagePart1.arg2RegNum; 
+    p.executeStagePart2.arg3RegNum = p.executeStagePart1.arg3RegNum;  
 
 
     return retVal;
@@ -1170,16 +1225,25 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 
 int tick(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, pipeline &p)
 {
-    fetch(insMem,r,p);
-    decode(r,p);
-    int x = execute(dataMem,r,p);
     writeback(r,p);
+    int x = execute(dataMem,r,p);
+    decode(r,p);
+    fetch(insMem,r,p);
 
-    // system("clear"); 
-    cout << p.fetchStage.insName << " " << p.decodeStagePart1.insName<< " " <<  p.executeStagePart1.insName << " "<<  p.wbStage.insName << endl;
-    cout << p.fetchStage.arg1 << " " << p.decodeStagePart1.arg1 << " " <<  p.executeStagePart1.arg1 << " "<<  p.wbStage.arg1 << endl;    
-    cout << p.fetchStage.arg2 << " " << p.decodeStagePart1.arg2 << " " <<  p.executeStagePart1.arg2 << " "<<  p.wbStage.arg2 << endl;  
-    cout << p.fetchStage.arg3 << " " << p.decodeStagePart1.arg3 << " " <<  p.executeStagePart1.arg3 << " "<<  p.wbStage.arg3 << endl;
+    cout << "------------------////-------------------" << endl;
+    cout << "fetch     insname: " << p.fetchStage.insName << endl;
+    cout << "decode    insname: " << p.decodeStagePart1.insName << endl;
+    cout << "execute   insname: " << p.executeStagePart1.insName << endl;
+    cout << "writeback insname: " << p.wbStage.insName << endl;
+    cout << "fetch args:"  << " " << p.fetchStage.arg1 << " " << p.fetchStage.arg2 << " " << p.fetchStage.arg3 << endl << endl;
+    cout << "decode stage 1 args:" << " " << p.decodeStagePart1.arg1 << " " << p.decodeStagePart1.arg2 << " " << p.decodeStagePart1.arg3 << endl;
+    cout << "decode stage 2 args:" << " " << p.decodeStagePart2.arg1 << " " << p.decodeStagePart2.arg2 << " " << p.decodeStagePart2.arg3 << endl << endl;
+    cout << "execute stage 1 args:" << " " << p.executeStagePart1.arg1 << " " << p.executeStagePart1.arg2 << " " << p.executeStagePart1.arg3 << endl;
+    cout << "execute stage 2 args:" << " " << p.executeStagePart2.arg1 << " " << p.executeStagePart2.arg2 << " " << p.executeStagePart2.arg3 << endl << endl;
+    cout << "writeback args:"  << " " << p.wbStage.arg1 << " " << p.wbStage.arg2 << " " << p.wbStage.arg3 << endl;
+    cout << "pc: " << r.pc << endl;
+    cout << "------------------////-------------------" << endl;
+
  
     p.advance();
     return x;
