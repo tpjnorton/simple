@@ -22,11 +22,62 @@ struct instructionMemory
 	string arg3;
 };
 
+struct pipelineStage
+{
+    string insName;
+    int arg1;
+    int arg2;
+    int arg3;
+};
 
 struct stringMetadata
 {
 	string line;
 	int lineNo;
+};
+
+class pipeline
+{
+    public:
+        int length;
+        instructionMemory fetchStage;
+        instructionMemory decodeStagePart1;
+        pipelineStage     decodeStagePart2;
+        pipelineStage     executeStagePart1;
+        pipelineStage     executeStagePart2;
+        pipelineStage     wbStage;
+
+        pipeline()
+        {
+            length = 4;
+        }
+
+        void advance()
+        {
+            wbStage.insName = executeStagePart2.insName;
+            wbStage.arg1 = executeStagePart2.arg1;
+            wbStage.arg2 = executeStagePart2.arg2;
+            wbStage.arg3 = executeStagePart2.arg3;
+
+            executeStagePart1.insName = decodeStagePart2.insName;
+            executeStagePart1.arg1    = decodeStagePart2.arg1;
+            executeStagePart1.arg2    = decodeStagePart2.arg2;
+            executeStagePart1.arg3    = decodeStagePart2.arg3;
+
+            decodeStagePart1.insName = fetchStage.insName;
+            decodeStagePart1.arg1    = fetchStage.arg1;
+            decodeStagePart1.arg2    = fetchStage.arg2;
+            decodeStagePart1.arg3    = fetchStage.arg3;
+        }
+
+        void flush()
+        {
+            executeStagePart1.insName     = "NOP";
+            executeStagePart2.insName     = "NOP";
+            decodeStagePart1.insName      = "NOP";
+            decodeStagePart2.insName      = "NOP";
+            fetchStage.insName            = "NOP";
+        }
 };
 
 class regFile
@@ -286,7 +337,473 @@ void regs(regFile &r, int regCount)
 	cout << "------------------////-------------------" << endl;
 }
 
-int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r)
+void fetch(std::map<int,instructionMemory> insMem, regFile &r, pipeline &p)
+{
+    p.fetchStage.insName = insMem[r.pc].insName;
+    p.fetchStage.arg1 = insMem[r.pc].arg1;
+    p.fetchStage.arg2 = insMem[r.pc].arg2;
+    p.fetchStage.arg3 = insMem[r.pc].arg3;
+    r.pc += 4;
+}
+
+int decode(regFile &r, pipeline &p)
+{
+    p.decodeStagePart2.insName = p.decodeStagePart1.insName;
+    p.decodeStagePart2.arg1 = 0;
+    p.decodeStagePart2.arg2 = 0;
+    p.decodeStagePart2.arg3 = 0;  
+    string instructionName = p.decodeStagePart2.insName;
+
+    //----------------Arithmetic Instructions----------------//
+
+    if (instructionName == "MOVI" || instructionName == "LOADI")
+    {
+        string word = p.decodeStagePart1.arg1;
+        word.erase(0, 1);
+        p.decodeStagePart2.arg1 = atoi(word.c_str());
+
+        string imm = p.decodeStagePart1.arg2;
+        p.decodeStagePart2.arg2 = atoi(imm.c_str());
+    }
+
+    else if (instructionName == "ADDI" || instructionName == "SUBI" || instructionName == "MULI")
+    {
+        string word1 = p.decodeStagePart1.arg1;
+        word1.erase(0, 1);
+        p.decodeStagePart2.arg1 = atoi(word1.c_str());
+        string word2 = p.decodeStagePart1.arg2;
+        word2.erase(0, 1);
+        p.decodeStagePart2.arg2 = r.load(atoi(word2.c_str()));
+        string imm = p.decodeStagePart1.arg3;
+        p.decodeStagePart2.arg3 = atoi(imm.c_str());  
+    }
+
+    else if (instructionName == "ADDR" || instructionName == "SUBR" || instructionName == "MULR" || instructionName == "AND"  \
+             || instructionName == "OR" || instructionName == "XOR" || instructionName == "CMP" )
+    {
+        string word1 = p.decodeStagePart1.arg1;
+        word1.erase(0, 1);
+        p.decodeStagePart2.arg1 = atoi(word1.c_str());
+
+        string word2 = p.decodeStagePart1.arg2;
+        word2.erase(0, 1);
+        p.decodeStagePart2.arg2  = r.load(atoi(word2.c_str()));
+
+        string word3 = p.decodeStagePart1.arg3;
+        word3.erase(0, 1);
+        p.decodeStagePart2.arg3 = r.load(atoi(word3.c_str()));
+        
+    }
+
+
+    //----------------Logical Operators----------------//
+
+
+    else if (instructionName == "NOT")
+    {
+        string word = p.decodeStagePart1.arg1;
+        word.erase(0, 1);
+        p.decodeStagePart2.arg1 = atoi(word.c_str());
+
+        string imm = p.decodeStagePart1.arg2;
+        p.decodeStagePart2.arg2 = r.load(atoi(imm.c_str()));
+        
+    }
+
+    else if (instructionName == "SHIFTLL" || instructionName == "SHIFTLA" || instructionName == "SHIFTRL" \
+              || instructionName == "SHIFTRA")
+    {
+        string word1 = p.decodeStagePart1.arg1;
+        word1.erase(0, 1);
+        p.decodeStagePart2.arg1 = atoi(word1.c_str());
+        string word2 = p.decodeStagePart1.arg2;
+        word2.erase(0, 1);
+        p.decodeStagePart2.arg2 = r.load(atoi(word2.c_str()));
+        string imm = p.decodeStagePart1.arg3;
+        p.decodeStagePart2.arg3 = atoi(imm.c_str());      
+    }
+
+    //----------------LOAD/STORE Instructions----------------//
+
+    else if (instructionName == "STOREI")
+    {
+        string word1 = p.decodeStagePart1.arg1;
+        word1.erase(0, 1);
+        p.decodeStagePart2.arg1 = r.load(atoi(word1.c_str()));
+        string word2 = p.decodeStagePart1.arg2;
+        p.decodeStagePart2.arg2 = atoi(word2.c_str());
+        string imm = p.decodeStagePart1.arg3;
+        p.decodeStagePart2.arg3 = atoi(imm.c_str());  
+    }
+
+    else if (instructionName == "STORER")
+    {
+        string word1 = p.decodeStagePart1.arg1;
+        word1.erase(0, 1);
+        p.decodeStagePart2.arg1 = r.load(atoi(word1.c_str()));
+
+        string word2 = p.decodeStagePart1.arg2;
+        word2.erase(0, 1);
+        p.decodeStagePart2.arg2 = r.load(atoi(word2.c_str()));
+        string imm = p.decodeStagePart1.arg3;
+        imm.erase(0, 1);
+        p.decodeStagePart2.arg3 = r.load(atoi(imm.c_str()));
+    }
+
+    else if (instructionName == "LOADR")
+    {
+        string word1 = p.decodeStagePart1.arg1;
+        word1.erase(0, 1);
+        p.decodeStagePart2.arg1 = atoi(word1.c_str());
+        string word2 = p.decodeStagePart1.arg2;
+        word2.erase(0, 1);
+        p.decodeStagePart2.arg2 = r.load(atoi(word2.c_str()));
+        string imm = p.decodeStagePart1.arg3;
+        cout << "japoigjadog: " << p.decodeStagePart1.arg3 << endl;
+        p.decodeStagePart2.arg3 = atoi(imm.c_str());
+    }
+
+    //---------------Control Flow Instructions-----------//
+
+    else if (instructionName == "BEQ")
+    {
+        string word = p.decodeStagePart1.arg1;
+        word.erase(0,1);
+        int reg = atoi(word.c_str());
+        p.decodeStagePart2.arg1 = r.load(reg);
+        p.decodeStagePart2.arg2 = atoi(p.decodeStagePart1.arg2.c_str());   
+    }
+
+    else if (instructionName == "CALL")
+    { 
+        p.decodeStagePart2.arg1 = atoi(p.decodeStagePart1.arg1.c_str()); 
+    }
+
+    else if (instructionName == "RETURN") {}
+
+    else if (instructionName == "JUMP")
+    {
+        p.decodeStagePart2.arg1 = atoi(p.decodeStagePart1.arg1.c_str()); 
+    }
+
+    else if (instructionName == "NOP" || instructionName == "STOP" ) {}
+
+    return 0;
+}
+
+int execute(std::map<int,int> &dataMem, regFile &r, pipeline &p)
+{
+    p.executeStagePart2.insName = p.executeStagePart1.insName;
+    p.executeStagePart2.arg1 = 0;
+    p.executeStagePart2.arg2 = 0;
+    p.executeStagePart2.arg3 = 0;  
+    string instructionName = p.executeStagePart2.insName;
+    int retVal = 0;
+
+    //----------------Arithmetic Instructions----------------//
+
+    if (instructionName == "MOVI")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2;
+    }
+
+    else if (instructionName == "ADDI")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 + p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "ADDR")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 + p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "SUBI")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 - p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "SUBR")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 - p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "MULI")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 * p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "MULR")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 * p.executeStagePart1.arg3;
+    }
+
+    //----------------Logical Operators----------------//
+
+    else if (instructionName == "AND")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 & p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "OR")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 | p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "XOR")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 ^ p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "NOT")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = ~(p.executeStagePart1.arg2); 
+    }
+
+    else if (instructionName == "SHIFTLL")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = (unsigned)p.executeStagePart1.arg2 << p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "SHIFTLA")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 << p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "SHIFTRL")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = (unsigned)p.executeStagePart1.arg2 >> p.executeStagePart1.arg3;
+    }
+
+    else if (instructionName == "SHIFTRA")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 >> p.executeStagePart1.arg3;
+    }
+
+    //----------------LOAD/STORE Instructions----------------//
+
+    else if (instructionName == "LOADR")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 + p.executeStagePart1.arg3;
+        cout << "address to load from: " << p.executeStagePart2.arg2 << endl;
+        p.executeStagePart2.arg2    = dataMem[p.executeStagePart2.arg2];
+        cout << "value loaded: " << p.executeStagePart2.arg2 << endl;
+    }
+
+    if (instructionName == "LOADI")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = dataMem[p.executeStagePart1.arg2];
+    }
+
+    if (instructionName == "STOREI")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 + p.executeStagePart1.arg3;
+        dataMem[p.executeStagePart2.arg1] = p.executeStagePart2.arg2;
+    }
+
+    if (instructionName == "STORER")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2 + p.executeStagePart1.arg3;
+        cout << "address to store in: " << p.executeStagePart2.arg2 << endl;
+        dataMem[p.executeStagePart2.arg2] = p.executeStagePart2.arg1;
+        cout << "value stored: " << p.executeStagePart2.arg1 << endl;
+    }
+
+    //---------------Control Flow Instructions-----------//
+
+    else if (instructionName == "CALL")
+    {
+        r.lr.push_back(r.pc);
+        r.pc = p.executeStagePart1.arg2; 
+        p.flush();
+    }
+
+    else if (instructionName == "RETURN")
+    {
+        r.pc = r.lr.back();
+        r.lr.pop_back();
+        p.flush();
+    }
+
+    else if (instructionName == "JUMP")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        r.pc = p.executeStagePart2.arg1;
+        p.flush();
+    }
+
+    else if (instructionName == "BEQ")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        p.executeStagePart2.arg2    = p.executeStagePart1.arg2;
+        if (p.executeStagePart2.arg1 == 0) 
+        {
+            r.pc = p.executeStagePart2.arg2;  
+            p.flush(); 
+        }
+    }
+
+    else if (instructionName == "CMP")
+    {
+        p.executeStagePart2.arg1    = p.executeStagePart1.arg1;
+        
+        int cmp1   = p.executeStagePart1.arg2;
+        int cmp2   = p.executeStagePart1.arg3;
+
+        if (cmp1 < cmp2)
+        {
+            p.executeStagePart2.arg2 = -1;
+        }
+
+        else if (cmp1 == cmp2)
+        {
+            p.executeStagePart2.arg2 = 0;
+        }
+
+        else
+        {
+            p.executeStagePart2.arg2 = 1;
+        }
+
+    }
+
+    else if (instructionName == "STOP")
+    {
+        retVal = 1;
+        p.flush();
+    }
+
+    else if (instructionName == "NOP") {}
+
+
+    return retVal;
+
+}
+
+void writeback(regFile &r, pipeline &p)
+{
+
+    string instructionName = p.wbStage.insName;
+    p.wbStage.arg3 = 0;
+    cout << endl;
+
+    //----------------Arithmetic Instructions----------------//
+
+    if (instructionName == "MOVI")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "ADDI")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "ADDR")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "SUBI")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "SUBR")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "MULI")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "MULR")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    //----------------Logical Operators----------------//
+
+    else if (instructionName == "AND")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "OR")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "XOR")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); ;
+    }
+
+    else if (instructionName == "NOT")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "SHIFTLL")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "SHIFTLA")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "SHIFTRL")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "SHIFTRA")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    //----------------LOAD/STORE Instructions----------------//
+
+    else if (instructionName == "CMP")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    else if (instructionName == "LOADR")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }
+
+    if (instructionName == "LOADI")
+    {
+        r.store(p.wbStage.arg1, p.wbStage.arg2); 
+    }    
+}
+
+/*
+int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, pipeline &p)
 {
 	string instructionName = insMem[r.pc].insName;
     // cout << instructionName << endl;
@@ -649,12 +1166,30 @@ int fdx(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regF
 
 	return 0;
 }
+*/
 
-int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, int count)
+int tick(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, pipeline &p)
+{
+    fetch(insMem,r,p);
+    decode(r,p);
+    int x = execute(dataMem,r,p);
+    writeback(r,p);
+
+    // system("clear"); 
+    cout << p.fetchStage.insName << " " << p.decodeStagePart1.insName<< " " <<  p.executeStagePart1.insName << " "<<  p.wbStage.insName << endl;
+    cout << p.fetchStage.arg1 << " " << p.decodeStagePart1.arg1 << " " <<  p.executeStagePart1.arg1 << " "<<  p.wbStage.arg1 << endl;    
+    cout << p.fetchStage.arg2 << " " << p.decodeStagePart1.arg2 << " " <<  p.executeStagePart1.arg2 << " "<<  p.wbStage.arg2 << endl;  
+    cout << p.fetchStage.arg3 << " " << p.decodeStagePart1.arg3 << " " <<  p.executeStagePart1.arg3 << " "<<  p.wbStage.arg3 << endl;
+ 
+    p.advance();
+    return x;
+}
+
+int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, int count, pipeline &p)
 {
   	for (int i = 0; i< count; i++)
   	{
-  		int j = fdx(dataMem, insMem, r);
+  		int j = tick(dataMem, insMem, r, p);
 
   		if (j == 1) return 1;
   	}
@@ -662,9 +1197,9 @@ int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
   	return 0;
 }
 
-void run(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r)
+void run(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, pipeline &p)
 {
- 	while (step(dataMem, insMem, r, 1) != 1) {};
+ 	while (step(dataMem, insMem, r, 1, p) != 1) {};
 }
 
 void help()
@@ -678,7 +1213,7 @@ void help()
     cout << "--------------------------------------------------------------" << endl;
 }
 
-int parseInput(string s, std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, int regCount)
+int parseInput(string s, std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, int regCount, pipeline &p)
 {
 	if (s == "exit" || s == "EXIT" || s == "quit" || s == "QUIT")
 	{
@@ -687,7 +1222,7 @@ int parseInput(string s, std::map<int,int> &dataMem, std::map<int,instructionMem
 
     else if (s == "run" || s == "RUN")
 	{
-		run(dataMem, insMem, r);
+		run(dataMem, insMem, r, p);
 	}
 
 	else if (s == "regs" || s == "REGS")
@@ -725,6 +1260,7 @@ int main(int argc, char* argv[])
 	int regCount = 16;
 	std::map<int,instructionMemory> insMem;
 	std::map<int,int> dataMem;
+    pipeline p;
 	regFile	   r(regCount);
 	fileReader f(argv[1]);
 	f.getContents();
@@ -739,9 +1275,9 @@ int main(int argc, char* argv[])
         if (s == "step" || s == "STEP")
         {
           cin >> s;
-          step(dataMem,insMem,r,atoi(s.c_str()));
+          step(dataMem,insMem,r,atoi(s.c_str()), p);
         }
-        else exitflag = parseInput(s, dataMem, insMem, r, regCount);
+        else exitflag = parseInput(s, dataMem, insMem, r, regCount,p);
 	}
     cout << "Goodbye!" << endl;
 	// cout << insMem[12].insName << endl;
