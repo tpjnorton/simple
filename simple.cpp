@@ -187,13 +187,19 @@ class pipeline
             decodeStagePart1 = fetchStage;
         }
 
-        void flush()
+        void flushPiplelines(pipeline &p)
         {
             executeStagePart1.insName     = "NOP";
             executeStagePart2.insName     = "NOP";
             decodeStagePart1.insName      = "NOP";
             decodeStagePart2.insName      = "NOP";
             fetchStage.insName            = "NOP";
+
+            p.executeStagePart1.insName     = "NOP";
+            p.executeStagePart2.insName     = "NOP";
+            p.decodeStagePart1.insName      = "NOP";
+            p.decodeStagePart2.insName      = "NOP";
+            p.fetchStage.insName            = "NOP";
         }
 
         void resFlush()
@@ -337,7 +343,9 @@ class pipeline
                 decodeStagePart2.arg2RegNum = atoi(word2.c_str());
 
                 string imm = decodeStagePart1.arg3;
+                imm.erase(0, 1);
                 decodeStagePart2.arg3 = atoi(imm.c_str());
+
             }
 
             //---------------Control Flow Instructions-----------//
@@ -369,7 +377,7 @@ class pipeline
             return 0;
         }
 
-        int execute()
+        int execute(pipeline &p)
         {
 
             pipelineStage temp;
@@ -487,7 +495,7 @@ class pipeline
                     else if (temp.insName == "STORER")
                     {
 
-                        if (resStat.operandAvail[temp.arg1] == 1 && resStat.operandAvail[temp.arg2] == 1) 
+                        if (resStat.operandAvail[temp.arg1] == 1 && resStat.operandAvail[temp.arg2] == 1 && resStat.operandAvail[temp.arg3] == 1) 
                         {
                             executeStagePart1 = temp;
                             resStat.reserveUnits.erase(resStat.reserveUnits.begin());
@@ -505,7 +513,7 @@ class pipeline
 
                     else if (temp.insName == "LOADR")
                     {
-                        if (resStat.operandAvail[temp.arg2] == 1) 
+                        if (resStat.operandAvail[temp.arg2] == 1 && resStat.operandAvail[temp.arg3] == 1) 
                         {
                             resStat.operandAvail[temp.arg1] = 0;
                             executeStagePart1 = temp;
@@ -673,8 +681,10 @@ class pipeline
             else if (instructionName == "LOADR")
             {
                 executeStagePart2.arg1    = executeStagePart1.arg1;
-                executeStagePart2.arg2    = rPoint->load(executeStagePart1.arg2) + executeStagePart1.arg3;
+                executeStagePart2.arg2    = rPoint->load(executeStagePart1.arg2) + rPoint->load(executeStagePart1.arg3);
+                cout << "address to load from: " << executeStagePart2.arg2 << endl;
                 executeStagePart2.arg2    = (*dataMemPoint)[executeStagePart2.arg2];
+                cout << "value loaded: " << executeStagePart2.arg2 << endl;
             }
 
             if (instructionName == "LOADI")
@@ -695,6 +705,8 @@ class pipeline
                 executeStagePart2.arg1    = rPoint->load(executeStagePart1.arg1);
                 executeStagePart2.arg2    = rPoint->load(executeStagePart1.arg2) + rPoint->load(executeStagePart1.arg3);
                 (*dataMemPoint)[executeStagePart2.arg2] = executeStagePart2.arg1;
+                cout << "address to store in: " << executeStagePart2.arg2 << endl;
+                cout << "value stored: " << executeStagePart2.arg1 << endl;
             }
 
             //---------------Control Flow Instructions-----------//
@@ -703,7 +715,7 @@ class pipeline
             {
                 rPoint->lr.push_back(rPoint->pc - 4);
                 rPoint->pc = executeStagePart1.arg1; 
-                flush();
+                flushPiplelines(p);
                 resFlush();
             }
 
@@ -711,7 +723,7 @@ class pipeline
             {
                 rPoint->pc = rPoint->lr.back();
                 rPoint->lr.pop_back();
-                flush();
+                flushPiplelines(p);
                 resFlush();
             }
 
@@ -719,7 +731,7 @@ class pipeline
             {
                 executeStagePart2.arg1    = executeStagePart1.arg1;
                 rPoint->pc = executeStagePart2.arg1;
-                flush();
+                flushPiplelines(p);
                 resFlush();
             }
 
@@ -731,7 +743,7 @@ class pipeline
                 {
                     cout << "branch taken" << endl;
                     rPoint->pc = executeStagePart2.arg2;  
-                    flush();
+                    flushPiplelines(p);
                     resFlush(); 
                 }
             }
@@ -763,8 +775,9 @@ class pipeline
             else if (instructionName == "STOP")
             {
                 retVal = 1;
-                flush();
+                flushPiplelines(p);
                 resFlush();
+                executeStagePart1.insName = "STOP";
             }
 
             else if (instructionName == "NOP") {}
@@ -1114,33 +1127,33 @@ void stat()
     cout << "-----------------------////------------------------" << endl;
 }
 
-int tick(pipeline &p)
+int tick(pipeline &p1,pipeline &p2)
 {
 
-    p.writeback();
-    int x = p.execute();
-    p.decode();
-    // cout << "------------------Pipeline " << p.idNum << " Status-------------------" << endl;
-    p.fetch();
+    p1.writeback();
+    int x = p1.execute(p2);
+    p1.decode();
+    p1.fetch();
 
     // stat();
 
-    // cout << "fetch     insname: " << p.fetchStage.insName << endl;
-    // cout << "decode    insname: " << p.decodeStagePart1.insName << endl;
-    // cout << "execute   insname: " << p.executeStagePart1.insName << endl;
-    // cout << "writeback insname: " << p.wbStage.insName << endl;
-    // cout << "fetch args:"  << " " << p.fetchStage.arg1 << " " << p.fetchStage.arg2 << " " << p.fetchStage.arg3 << endl << endl;
-    // cout << "decode stage 1 args:" << " " << p.decodeStagePart1.arg1 << " " << p.decodeStagePart1.arg2 << " " << p.decodeStagePart1.arg3 << endl;
-    // cout << "decode stage 2 args:" << " " << p.decodeStagePart2.arg1 << " " << p.decodeStagePart2.arg2 << " " << p.decodeStagePart2.arg3 << endl << endl;
-    // cout << "execute stage 1 args:" << " " << p.executeStagePart1.arg1 << " " << p.executeStagePart1.arg2 << " " << p.executeStagePart1.arg3 << endl;
-    // cout << "execute stage 2 args:" << " " << p.executeStagePart2.arg1 << " " << p.executeStagePart2.arg2 << " " << p.executeStagePart2.arg3 << endl << endl;
-    // cout << "writeback args:"  << " " << p.wbStage.arg1 << " " << p.wbStage.arg2 << " " << p.wbStage.arg3 << endl;
-    // cout << "pc: " << p.rPoint->pc << endl;
-    // cout << "------------------////-------------------" << endl << endl;
+    cout << "------------------Pipeline " << p1.idNum << " Status-------------------" << endl;
+    cout << "fetch     insname: " << p1.fetchStage.insName << endl;
+    cout << "fetch args:"  << " " << p1.fetchStage.arg1 << " " << p1.fetchStage.arg2 << " " << p1.fetchStage.arg3 << endl << endl;
+    cout << "decode    insname: " << p1.decodeStagePart1.insName << endl;
+    cout << "decode stage 1 args:" << " " << p1.decodeStagePart1.arg1 << " " << p1.decodeStagePart1.arg2 << " " << p1.decodeStagePart1.arg3 << endl;
+    cout << "decode stage 2 args:" << " " << p1.decodeStagePart2.arg1 << " " << p1.decodeStagePart2.arg2 << " " << p1.decodeStagePart2.arg3 << endl << endl;
+    cout << "execute   insname: " << p1.executeStagePart1.insName << endl;
+    cout << "execute stage 1 args:" << " " << p1.executeStagePart1.arg1 << " " << p1.executeStagePart1.arg2 << " " << p1.executeStagePart1.arg3 << endl;
+    cout << "execute stage 2 args:" << " " << p1.executeStagePart2.arg1 << " " << p1.executeStagePart2.arg2 << " " << p1.executeStagePart2.arg3 << endl << endl;
+    cout << "writeback insname: " << p1.wbStage.insName << endl;
+    cout << "writeback args:"  << " " << p1.wbStage.arg1 << " " << p1.wbStage.arg2 << " " << p1.wbStage.arg3 << endl;
+    cout << "pc: " << p1.rPoint->pc << endl;
+    cout << "------------------////-------------------" << endl << endl;
 
     
 
-    p.advance();
+    p1.advance();
     return x;
 }
 
@@ -1149,8 +1162,8 @@ int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
   	for (int i = 0; i< count; i++)
   	{
         cout << "------------------////-------------------" << endl;
-  		int j = tick(p1);
-        int k = tick(p2);
+  		int j = tick(p1,p2);
+        int k = tick(p2,p1);
         cout << "------------------////-------------------" << endl << endl;
 
   		if (j == 1 || k == 1) return 1;
@@ -1163,6 +1176,8 @@ void run(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
 {
  	int i = 0;
     while (step(dataMem, insMem, r, 1, p1,p2) != 1) {i++;};
+
+    step(dataMem, insMem, r, 1, p1,p2);
 
     cout << "cycles taken: " << i << endl;
 }
