@@ -2,24 +2,30 @@ number of cycles taken
 
 loop.smp
 
-	scalar: 64
+	scalar: 65
 
-	superscalar: 41
+	superscalar: 42
 
-	plus removal of unconditional bubbling: 33
+	plus removal of unconditional bubbling: 34
+
+	with novel branch prediction:
 
 loadstore.smp
 
-	scalar: 12
+	scalar: 13
 
-	superscalar: 6
+	superscalar: 7
 
-	plus removal of unconditional bubbling: 6
+	plus removal of unconditional bubbling: 7
+
+	with novel branch prediction:
 
 arraysum.smp
 
-	scalar: 122
+	scalar: 123
 
-	superscalar: 76
+	superscalar: 119
 
-	plus removal of unconditional bubbling: 64
+	plus removal of unconditional bubbling: 104
+
+	with novel branch prediction:

@@ -61,8 +61,6 @@ struct reservStation
         p.insName = "NOP";
         p.arg1 = p.arg2 = p.arg3 = 0;
         p.arg1RegNum = p.arg2RegNum = p.arg3RegNum = -2;
-        reserveUnits.push_back(p);
-        reserveUnits.push_back(p);
 
         for (int i = 0; i<16; i++)
         {
@@ -749,17 +747,23 @@ class pipeline
 
             else if (instructionName == "CALL")
             {
-
+                // int newProgCounter = executeStagePart1.arg1;
+                // rPoint->lr.push_back(rPoint->pc);
+                // rPoint->pc = newProgCounter; 
             }
 
             else if (instructionName == "RETURN")
             {
-
+                // rPoint->pc = rPoint->lr.back();
+                // rPoint->lr.pop_back(); 
             }
 
             else if (instructionName == "JUMP")
-            {
-
+            {  
+                // int newProgCounter = executeStagePart1.arg1;
+                // rPoint->pc = newProgCounter;
+                // flushPiplelines(p);
+                // resFlush();  
             }
 
             else if (instructionName == "BEQ")
@@ -1200,20 +1204,20 @@ int tick(pipeline &p1,pipeline &p2)
 {
 
     stat();
-    p1.writeback();
-    p2.writeback();
-    int x = p1.execute(p2);
-    int y = p2.execute(p1);
-    p1.decode();
-    p2.decode();
+    p1.advance();
+    p2.advance();
     p1.fetch();
     p2.fetch();
+    p1.decode();
+    p2.decode();
+    int x = p1.execute(p2);
+    int y = p2.execute(p1);
+    p1.writeback();
+    p2.writeback();
 
     pipelineStatus(p1);
     pipelineStatus(p2);
  
-    p1.advance();
-    p2.advance();
     return x | y;
 }
 
@@ -1226,9 +1230,9 @@ int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
         cout << "------------------////-------------------" << endl << endl;
 
   		if (j == 1) 
-            {
-                return 1;
-            }
+        {
+            return 1;
+        }
   	}
 
   	return 0;
@@ -1245,6 +1249,7 @@ void run(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
 
     step(dataMem, insMem, r, 1, p1,p2);
     p1.flushPiplelines(p2);
+    i++;
 
     cout << "cycles taken: " << i << endl;
 }
