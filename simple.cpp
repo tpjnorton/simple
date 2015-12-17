@@ -594,7 +594,7 @@ class pipeline
             string instructionName = executeStagePart2.insName;
             int retVal = 0;
 
-            cout << "instruction executed: " << executeStagePart1.insName << endl;
+            // cout << "instruction executed: " << executeStagePart1.insName << endl;
 
             //----------------Arithmetic Instructions----------------//
 
@@ -746,7 +746,7 @@ class pipeline
                 executeStagePart2.arg2    = executeStagePart1.arg2;
                 if (executeStagePart2.arg1 == 0) 
                 {
-                    cout << "branch taken" << endl;
+                    // cout << "branch taken" << endl;
                     rPoint->pc = executeStagePart2.arg2;  
                     flushPiplelines(p);
                     resFlush(); 
