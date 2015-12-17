@@ -202,16 +202,21 @@ class pipeline
                 rPoint->pc = newProgCounter; 
             }
 
-            if (p.insName == "JUMP")
+            else if (p.insName == "JUMP")
             {
                 int newProgCounter = atoi(p.arg1.c_str());
                 rPoint->pc = newProgCounter; 
             }
 
-            if (p.insName == "RETURN")
+            else if (p.insName == "RETURN")
             {
                 rPoint->pc = rPoint->lr.back();
                 rPoint->lr.pop_back();
+            }
+
+            else if (p.insName == "BEQ")
+            {
+
             }
 
         }
@@ -364,7 +369,7 @@ class pipeline
 
             //---------------Control Flow Instructions-----------//
 
-            else if (instructionName == "BEQ")
+            else if (instructionName == "BEQ" || instructionName == "BNEQ" )
             {
                 string word = decodeStagePart1.arg1;
                 word.erase(0,1);
@@ -400,7 +405,7 @@ class pipeline
             {
                 temp = resStat.reserveUnits[0];
 
-                if (temp.insName != "NOP" && temp.insName != "BEQ" && temp.insName != "CALL" && \
+                if (temp.insName != "NOP" && temp.insName != "BEQ" && temp.insName != "BNEQ" && temp.insName != "CALL" && \
                     temp.insName !=  "RETURN" && temp.insName !=  "JUMP" && temp.insName !=  "STOP")
                 {
 
@@ -561,6 +566,23 @@ class pipeline
                 }
 
                 else if (temp.insName == "BEQ")
+                {
+                    if (resStat.operandAvail[temp.arg1] == 1) 
+                    {
+                        executeStagePart1 = temp;
+                        resStat.reserveUnits.erase(resStat.reserveUnits.begin());
+                    }
+
+                    else
+                    {
+                        executeStagePart1.insName = "WAIT";
+                        executeStagePart1.arg1 = 0;
+                        executeStagePart1.arg2 = 0;
+                        executeStagePart1.arg3 = 0;
+                    }
+                }
+
+                else if (temp.insName == "BNEQ")
                 {
                     if (resStat.operandAvail[temp.arg1] == 1) 
                     {
@@ -746,11 +768,29 @@ class pipeline
                 executeStagePart2.arg2    = executeStagePart1.arg2;
                 if (executeStagePart2.arg1 == 0) 
                 {
-                    // cout << "branch taken" << endl;
+                    cout << "BEQ branch taken" << endl;
                     rPoint->pc = executeStagePart2.arg2;  
                     flushPiplelines(p);
                     resFlush(); 
                 }
+
+                else cout << "BNEQ branch not taken" << endl;
+
+            }
+
+            else if (instructionName == "BNEQ")
+            {
+                executeStagePart2.arg1    = rPoint->load(executeStagePart1.arg1);
+                executeStagePart2.arg2    = executeStagePart1.arg2;
+                if (executeStagePart2.arg1 != 0) 
+                {
+                    cout << "BNEQ branch taken" << endl;
+                    rPoint->pc = executeStagePart2.arg2;  
+                    flushPiplelines(p);
+                    resFlush(); 
+                }
+
+                else cout << "BNEQ branch not taken" << endl;
             }
 
             else if (instructionName == "CMP")
@@ -1072,7 +1112,7 @@ void fillInstructionMemory(fileReader &f, map<int,instructionMemory> &insMem)
 			insMem[address].arg3 = word;
 		}
 
-		else if (word == "BEQ" || word == "MOVI" || word == "LOADI" || word == "NOT")
+		else if (word == "BEQ" || word == "MOVI" || word == "LOADI" || word == "NOT" || word == "BNEQ")
 		{
 			insMem[address].insName = word;
 			word = f.getNextToken();
