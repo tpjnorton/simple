@@ -1,0 +1,25 @@
+number of cycles taken
+
+loop.smp
+
+	scalar: 64
+
+	superscalar: 41
+
+	plus removal of unconditional bubbling: 33
+
+loadstore.smp
+
+	scalar: 12
+
+	superscalar: 6
+
+	plus removal of unconditional bubbling: 6
+
+arraysum.smp
+
+	scalar: 122
+
+	superscalar: 76
+
+	plus removal of unconditional bubbling: 64

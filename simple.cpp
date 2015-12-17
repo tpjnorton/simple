@@ -161,15 +161,6 @@ class pipeline
         {
             wbStage = executeStagePart2;
 
-            // executeStagePart1.insName = decodeStagePart2.insName;
-            // executeStagePart1.arg1    = decodeStagePart2.arg1;
-            // executeStagePart1.arg2    = decodeStagePart2.arg2;
-            // executeStagePart1.arg3    = decodeStagePart2.arg3;
-
-            // executeStagePart1.arg1RegNum    = decodeStagePart2.arg1RegNum;
-            // executeStagePart1.arg2RegNum    = decodeStagePart2.arg2RegNum;
-            // executeStagePart1.arg3RegNum    = decodeStagePart2.arg3RegNum;
-
             pipelineStage newResStatEntry;
 
             newResStatEntry = decodeStagePart2;
@@ -178,11 +169,6 @@ class pipeline
             {
                 resStat.reserveUnits.push_back(newResStatEntry);
             }
-
-            // decodeStagePart1.insName = fetchStage.insName;
-            // decodeStagePart1.arg1    = fetchStage.arg1;
-            // decodeStagePart1.arg2    = fetchStage.arg2;
-            // decodeStagePart1.arg3    = fetchStage.arg3;
 
             decodeStagePart1 = fetchStage;
         }
@@ -207,10 +193,38 @@ class pipeline
             resStat.reserveUnits.erase(resStat.reserveUnits.begin(),resStat.reserveUnits.end());
         }
 
+        void predictBranches(instructionMemory &p)
+        {
+            if (p.insName == "CALL")
+            {
+                int newProgCounter = atoi(p.arg1.c_str());
+                rPoint->lr.push_back(rPoint->pc);
+                rPoint->pc = newProgCounter; 
+            }
+
+            if (p.insName == "JUMP")
+            {
+                int newProgCounter = atoi(p.arg1.c_str());
+                rPoint->pc = newProgCounter; 
+            }
+
+            if (p.insName == "RETURN")
+            {
+                rPoint->pc = rPoint->lr.back();
+                rPoint->lr.pop_back();
+            }
+
+        }
+
         void fetch()
         {
             fetchStage = (*insMemPoint)[rPoint->pc];
             rPoint->pc += 4;
+
+            if(fetchStage.insName == "JUMP" || fetchStage.insName == "CALL" || fetchStage.insName == "RETURN" || fetchStage.insName == "BEQ")
+            {
+                predictBranches(fetchStage);
+            } 
         }
 
         int decode()
@@ -713,26 +727,17 @@ class pipeline
 
             else if (instructionName == "CALL")
             {
-                rPoint->lr.push_back(rPoint->pc - 4);
-                rPoint->pc = executeStagePart1.arg1; 
-                flushPiplelines(p);
-                resFlush();
+
             }
 
             else if (instructionName == "RETURN")
             {
-                rPoint->pc = rPoint->lr.back();
-                rPoint->lr.pop_back();
-                flushPiplelines(p);
-                resFlush();
+
             }
 
             else if (instructionName == "JUMP")
             {
-                executeStagePart2.arg1    = executeStagePart1.arg1;
-                rPoint->pc = executeStagePart2.arg1;
-                flushPiplelines(p);
-                resFlush();
+
             }
 
             else if (instructionName == "BEQ")
@@ -775,7 +780,6 @@ class pipeline
             else if (instructionName == "STOP")
             {
                 retVal = 1;
-                flushPiplelines(p);
                 resFlush();
                 executeStagePart1.insName = "STOP";
             }
@@ -1125,36 +1129,52 @@ void stat()
     }
 
     cout << "-----------------------////------------------------" << endl;
+
+
+    for (num = 0; num < sizeof(resStat.operandAvail)/sizeof(int); num++)
+    {
+        cout << "reg " << num <<  " insName: " << resStat.operandAvail[num] << endl;
+    }
+
+}
+
+
+void pipelineStatus(pipeline &p)
+{
+    cout << "------------------Pipeline " << p.idNum << " Status-------------------" << endl;
+    cout << "fetch     insname: " << p.fetchStage.insName << endl;
+    cout << "fetch args:"  << " " << p.fetchStage.arg1 << " " << p.fetchStage.arg2 << " " << p.fetchStage.arg3 << endl << endl;
+    cout << "decode    insname: " << p.decodeStagePart1.insName << endl;
+    cout << "decode stage 1 args:" << " " << p.decodeStagePart1.arg1 << " " << p.decodeStagePart1.arg2 << " " << p.decodeStagePart1.arg3 << endl;
+    cout << "decode stage 2 args:" << " " << p.decodeStagePart2.arg1 << " " << p.decodeStagePart2.arg2 << " " << p.decodeStagePart2.arg3 << endl << endl;
+    cout << "execute   insname: " << p.executeStagePart1.insName << endl;
+    cout << "execute stage 1 args:" << " " << p.executeStagePart1.arg1 << " " << p.executeStagePart1.arg2 << " " << p.executeStagePart1.arg3 << endl;
+    cout << "execute stage 2 args:" << " " << p.executeStagePart2.arg1 << " " << p.executeStagePart2.arg2 << " " << p.executeStagePart2.arg3 << endl << endl;
+    cout << "writeback insname: " << p.wbStage.insName << endl;
+    cout << "writeback args:"  << " " << p.wbStage.arg1 << " " << p.wbStage.arg2 << " " << p.wbStage.arg3 << endl;
+    cout << "pc: " << p.rPoint->pc << endl;
+    cout << "------------------////-------------------" << endl << endl;
 }
 
 int tick(pipeline &p1,pipeline &p2)
 {
 
+    stat();
     p1.writeback();
+    p2.writeback();
     int x = p1.execute(p2);
+    int y = p2.execute(p1);
     p1.decode();
+    p2.decode();
     p1.fetch();
+    p2.fetch();
 
-    // stat();
-
-    cout << "------------------Pipeline " << p1.idNum << " Status-------------------" << endl;
-    cout << "fetch     insname: " << p1.fetchStage.insName << endl;
-    cout << "fetch args:"  << " " << p1.fetchStage.arg1 << " " << p1.fetchStage.arg2 << " " << p1.fetchStage.arg3 << endl << endl;
-    cout << "decode    insname: " << p1.decodeStagePart1.insName << endl;
-    cout << "decode stage 1 args:" << " " << p1.decodeStagePart1.arg1 << " " << p1.decodeStagePart1.arg2 << " " << p1.decodeStagePart1.arg3 << endl;
-    cout << "decode stage 2 args:" << " " << p1.decodeStagePart2.arg1 << " " << p1.decodeStagePart2.arg2 << " " << p1.decodeStagePart2.arg3 << endl << endl;
-    cout << "execute   insname: " << p1.executeStagePart1.insName << endl;
-    cout << "execute stage 1 args:" << " " << p1.executeStagePart1.arg1 << " " << p1.executeStagePart1.arg2 << " " << p1.executeStagePart1.arg3 << endl;
-    cout << "execute stage 2 args:" << " " << p1.executeStagePart2.arg1 << " " << p1.executeStagePart2.arg2 << " " << p1.executeStagePart2.arg3 << endl << endl;
-    cout << "writeback insname: " << p1.wbStage.insName << endl;
-    cout << "writeback args:"  << " " << p1.wbStage.arg1 << " " << p1.wbStage.arg2 << " " << p1.wbStage.arg3 << endl;
-    cout << "pc: " << p1.rPoint->pc << endl;
-    cout << "------------------////-------------------" << endl << endl;
-
-    
-
+    pipelineStatus(p1);
+    pipelineStatus(p2);
+ 
     p1.advance();
-    return x;
+    p2.advance();
+    return x | y;
 }
 
 int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, int count, pipeline &p1, pipeline &p2)
@@ -1163,10 +1183,12 @@ int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
   	{
         cout << "------------------////-------------------" << endl;
   		int j = tick(p1,p2);
-        int k = tick(p2,p1);
         cout << "------------------////-------------------" << endl << endl;
 
-  		if (j == 1 || k == 1) return 1;
+  		if (j == 1) 
+            {
+                return 1;
+            }
   	}
 
   	return 0;
@@ -1175,9 +1197,14 @@ int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
 void run(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, regFile &r, pipeline &p1, pipeline &p2)
 {
  	int i = 0;
-    while (step(dataMem, insMem, r, 1, p1,p2) != 1) {i++;};
+    while (1) 
+    {
+        if (step(dataMem, insMem, r, 1, p1,p2) == 1) break;
+        i++;
+    }
 
     step(dataMem, insMem, r, 1, p1,p2);
+    p1.flushPiplelines(p2);
 
     cout << "cycles taken: " << i << endl;
 }
