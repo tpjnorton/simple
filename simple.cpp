@@ -250,7 +250,6 @@ class pipeline
                     rPoint->pc = newProgCounter;
                     branchTable[fetchStage.instructionPC].takeBranch = 1; 
                 }
-
             }
 
         }
@@ -1310,10 +1309,12 @@ int tick(pipeline &p1,pipeline &p2)
     p1.writeback();
     p2.writeback();
 
-    dispBranchTable();
+    // uncomment these to see branch table/reservation station contents at current location
+
+    // dispBranchTable();
     // stat();
-    // pipelineStatus(p1);
-    // pipelineStatus(p2);
+    pipelineStatus(p1);
+    pipelineStatus(p2);
  
     return x | y;
 }

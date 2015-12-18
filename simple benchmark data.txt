@@ -24,8 +24,6 @@ arraysum.smp
 
 	scalar: 123
 
-	superscalar: 119
+	superscalar without branch prediction: 119
 
-	plus removal of unconditional bubbling: 104
-
-	with novel branch prediction:
+	with novel branch prediction: 100
