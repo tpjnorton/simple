@@ -11,8 +11,6 @@
 
 using namespace std;
 
-int currentLine = 1;
-int baseAddress = 0x00;
 
 
 struct instructionMemory
@@ -21,6 +19,25 @@ struct instructionMemory
     string arg1;
     string arg2;
     string arg3;
+    int instructionPC;
+
+    instructionMemory()
+    {
+        instructionPC = 0;
+    }
+};
+
+struct branchData
+{
+    int oldPC;
+    int takeBranch;
+    int numTimesTaken;
+    int numTimesNotTaken;
+
+    branchData()
+    {
+        oldPC = takeBranch = numTimesTaken = numTimesNotTaken = 0;
+    }
 };
 
 
@@ -30,16 +47,15 @@ struct pipelineStage
     int arg1;
     int arg2;
     int arg3;
-    int arg1RegNum;
-    int arg2RegNum;
-    int arg3RegNum;
+    int instructionPC;
 
 
     pipelineStage()
     {
         insName = "NOP";
         arg1 = arg2 = arg3 = 0;
-        arg1RegNum = arg2RegNum = arg3RegNum = -2;
+        instructionPC = 0;
+
     }
 
 };
@@ -60,7 +76,7 @@ struct reservStation
         pipelineStage p;
         p.insName = "NOP";
         p.arg1 = p.arg2 = p.arg3 = 0;
-        p.arg1RegNum = p.arg2RegNum = p.arg3RegNum = -2;
+
 
         for (int i = 0; i<16; i++)
         {
@@ -71,13 +87,16 @@ struct reservStation
 };
 
 reservStation resStat;
+int currentLine = 1;
+int baseAddress = 0x00;
+map<int,branchData> branchTable;
 
 class regFile
 {
-	public:
+    public:
 
-		int pc;
-		vector<int> lr;
+        int pc;
+        vector<int> lr;
 
         regFile(int regCount)
         {
@@ -212,8 +231,25 @@ class pipeline
                 rPoint->lr.pop_back();
             }
 
-            else if (p.insName == "BEQ")
+            else if (p.insName == "BEQ" || p.insName == "BNEQ")
             {
+                int newProgCounter = atoi(p.arg2.c_str());
+                branchTable[fetchStage.instructionPC].oldPC = rPoint->pc;
+
+                if (newProgCounter < rPoint->pc)
+                {
+                    rPoint->pc = newProgCounter;
+                    branchTable[fetchStage.instructionPC].takeBranch = 1;     
+                }
+
+                else if (branchTable[fetchStage.instructionPC].numTimesNotTaken >=  \
+                         branchTable[fetchStage.instructionPC].numTimesTaken) {}
+
+                else
+                {
+                    rPoint->pc = newProgCounter;
+                    branchTable[fetchStage.instructionPC].takeBranch = 1; 
+                }
 
             }
 
@@ -224,7 +260,7 @@ class pipeline
             fetchStage = (*insMemPoint)[rPoint->pc];
             rPoint->pc += 4;
 
-            if(fetchStage.insName == "JUMP" || fetchStage.insName == "CALL" || fetchStage.insName == "RETURN" || fetchStage.insName == "BEQ")
+            if(fetchStage.insName == "JUMP" || fetchStage.insName == "CALL" || fetchStage.insName == "RETURN" || fetchStage.insName == "BEQ" || fetchStage.insName == "BNEQ")
             {
                 predictBranches(fetchStage);
             } 
@@ -236,9 +272,7 @@ class pipeline
             decodeStagePart2.arg1 = 0;
             decodeStagePart2.arg2 = 0;
             decodeStagePart2.arg3 = 0;
-            decodeStagePart2.arg1RegNum = -2;
-            decodeStagePart2.arg2RegNum = -2;
-            decodeStagePart2.arg3RegNum = -2;   
+            decodeStagePart2.instructionPC = decodeStagePart1.instructionPC;   
             string instructionName = decodeStagePart2.insName;
 
             //----------------Arithmetic Instructions----------------//
@@ -261,7 +295,7 @@ class pipeline
                 string word2 = decodeStagePart1.arg2;
                 word2.erase(0, 1);
                 decodeStagePart2.arg2 = atoi(word2.c_str());
-                decodeStagePart2.arg2RegNum = atoi(word2.c_str());
+        
                 string imm = decodeStagePart1.arg3;
                 decodeStagePart2.arg3 = atoi(imm.c_str());  
             }
@@ -276,12 +310,10 @@ class pipeline
                 string word2 = decodeStagePart1.arg2;
                 word2.erase(0, 1);
                 decodeStagePart2.arg2  = atoi(word2.c_str());
-                decodeStagePart2.arg2RegNum = atoi(word2.c_str());
-
+        
                 string word3 = decodeStagePart1.arg3;
                 word3.erase(0, 1);
                 decodeStagePart2.arg3 = atoi(word3.c_str());
-                decodeStagePart2.arg3RegNum = atoi(word3.c_str());
                 
             }
 
@@ -298,7 +330,7 @@ class pipeline
                 string imm = decodeStagePart1.arg2;
                 imm.erase(0, 1);
                 decodeStagePart2.arg2 = atoi(imm.c_str());
-                decodeStagePart2.arg2RegNum = atoi(imm.c_str());
+        
                 
             }
 
@@ -311,7 +343,7 @@ class pipeline
                 string word2 = decodeStagePart1.arg2;
                 word2.erase(0, 1);
                 decodeStagePart2.arg2 = atoi(word2.c_str());
-                decodeStagePart2.arg2RegNum = atoi(word2.c_str());
+        
                 string imm = decodeStagePart1.arg3;
                 decodeStagePart2.arg3 = atoi(imm.c_str());      
             }
@@ -323,7 +355,7 @@ class pipeline
                 string word1 = decodeStagePart1.arg1;
                 word1.erase(0, 1);
                 decodeStagePart2.arg1 = atoi(word1.c_str());
-                decodeStagePart2.arg1RegNum = atoi(word1.c_str());
+        
                 string word2 = decodeStagePart1.arg2;
                 decodeStagePart2.arg2 = atoi(word2.c_str());
                 string imm = decodeStagePart1.arg3;
@@ -335,17 +367,17 @@ class pipeline
                 string word1 = decodeStagePart1.arg1;
                 word1.erase(0, 1);
                 decodeStagePart2.arg1 = atoi(word1.c_str());
-                decodeStagePart2.arg1RegNum = atoi(word1.c_str());
+        
 
                 string word2 = decodeStagePart1.arg2;
                 word2.erase(0, 1);
                 decodeStagePart2.arg2 = atoi(word2.c_str());
-                decodeStagePart2.arg2RegNum = atoi(word2.c_str());
+        
 
                 string imm = decodeStagePart1.arg3;
                 imm.erase(0, 1);
                 decodeStagePart2.arg3 = atoi(imm.c_str());
-                decodeStagePart2.arg3RegNum = atoi(imm.c_str());
+        
             }
 
             else if (instructionName == "LOADR")
@@ -357,7 +389,7 @@ class pipeline
                 string word2 = decodeStagePart1.arg2;
                 word2.erase(0, 1);
                 decodeStagePart2.arg2 = atoi(word2.c_str());
-                decodeStagePart2.arg2RegNum = atoi(word2.c_str());
+        
 
                 string imm = decodeStagePart1.arg3;
                 imm.erase(0, 1);
@@ -373,7 +405,7 @@ class pipeline
                 word.erase(0,1);
                 int reg = atoi(word.c_str());
                 decodeStagePart2.arg1 = reg;
-                decodeStagePart2.arg1RegNum = reg;
+        
                 decodeStagePart2.arg2 = atoi(decodeStagePart1.arg2.c_str());   
             }
 
@@ -554,9 +586,9 @@ class pipeline
                         executeStagePart1.arg1 = 0;
                         executeStagePart1.arg2 = 0;
                         executeStagePart1.arg3 = 0;
-                        executeStagePart1.arg1RegNum = 0;
-                        executeStagePart1.arg2RegNum = 0;
-                        executeStagePart1.arg3RegNum = 0;
+                
+                
+                
                     }
 
 
@@ -716,9 +748,9 @@ class pipeline
             {
                 executeStagePart2.arg1    = executeStagePart1.arg1;
                 executeStagePart2.arg2    = rPoint->load(executeStagePart1.arg2) + rPoint->load(executeStagePart1.arg3);
-                cout << "address to load from: " << executeStagePart2.arg2 << endl;
+                // cout << "address to load from: " << executeStagePart2.arg2 << endl;
                 executeStagePart2.arg2    = (*dataMemPoint)[executeStagePart2.arg2];
-                cout << "value loaded: " << executeStagePart2.arg2 << endl;
+                // cout << "value loaded: " << executeStagePart2.arg2 << endl;
             }
 
             if (instructionName == "LOADI")
@@ -739,8 +771,8 @@ class pipeline
                 executeStagePart2.arg1    = rPoint->load(executeStagePart1.arg1);
                 executeStagePart2.arg2    = rPoint->load(executeStagePart1.arg2) + rPoint->load(executeStagePart1.arg3);
                 (*dataMemPoint)[executeStagePart2.arg2] = executeStagePart2.arg1;
-                cout << "address to store in: " << executeStagePart2.arg2 << endl;
-                cout << "value stored: " << executeStagePart2.arg1 << endl;
+                // cout << "address to store in: " << executeStagePart2.arg2 << endl;
+                // cout << "value stored: " << executeStagePart2.arg1 << endl;
             }
 
             //---------------Control Flow Instructions-----------//
@@ -772,14 +804,38 @@ class pipeline
                 executeStagePart2.arg2    = executeStagePart1.arg2;
                 if (executeStagePart2.arg1 == 0) 
                 {
-                    cout << "BEQ branch taken" << endl;
-                    rPoint->pc = executeStagePart2.arg2;  
-                    flushPiplelines(p);
-                    resFlush(); 
+                    if (branchTable[executeStagePart1.instructionPC].takeBranch == 1)
+                    {
+                        branchTable[executeStagePart1.instructionPC].takeBranch = 0;
+                        branchTable[executeStagePart1.instructionPC].numTimesTaken++;
+                    }
+
+                    else
+                    {                        
+                        cout << "BEQ branch unexpectedly taken!" << endl;
+                        rPoint->pc = executeStagePart2.arg2;
+                        branchTable[executeStagePart1.instructionPC].numTimesTaken++;  
+                        flushPiplelines(p);
+                        resFlush(); 
+                    }
                 }
 
-                else cout << "BNEQ branch not taken" << endl;
+                else
+                {
+                    if (branchTable[executeStagePart1.instructionPC].takeBranch == 0)
+                    {
+                        branchTable[executeStagePart1.instructionPC].numTimesNotTaken++; 
+                    }
 
+                    else
+                    {                        
+                        cout << "BEQ branch unexpectedly not taken!" << endl;
+                        rPoint->pc = branchTable[executeStagePart1.instructionPC].oldPC;
+                        branchTable[executeStagePart1.instructionPC].numTimesNotTaken++;   
+                        flushPiplelines(p);
+                        resFlush(); 
+                    }
+                }
             }
 
             else if (instructionName == "BNEQ")
@@ -788,13 +844,39 @@ class pipeline
                 executeStagePart2.arg2    = executeStagePart1.arg2;
                 if (executeStagePart2.arg1 != 0) 
                 {
-                    cout << "BNEQ branch taken" << endl;
-                    rPoint->pc = executeStagePart2.arg2;  
-                    flushPiplelines(p);
-                    resFlush(); 
+                    if (branchTable[executeStagePart1.instructionPC].takeBranch == 1)
+                    {
+                        branchTable[executeStagePart1.instructionPC].takeBranch = 0;
+                        branchTable[executeStagePart1.instructionPC].numTimesTaken++;
+                    }
+
+                    else
+                    {                        
+                        cout << "BNEQ branch unexpectedly taken!" << endl;
+                        rPoint->pc = executeStagePart2.arg2;
+                        branchTable[executeStagePart1.instructionPC].numTimesTaken++;  
+                        flushPiplelines(p);
+                        resFlush(); 
+                    }
                 }
 
-                else cout << "BNEQ branch not taken" << endl;
+                else
+                {
+                    if (branchTable[executeStagePart1.instructionPC].takeBranch == 0)
+                    {
+                        branchTable[executeStagePart1.instructionPC].numTimesNotTaken++; 
+                    }
+
+                    else
+                    {                        
+                        cout << "BNEQ branch unexpectedly NOT taken!" << endl;
+                        rPoint->pc = branchTable[executeStagePart1.instructionPC].oldPC;
+                        branchTable[executeStagePart1.instructionPC].takeBranch = 0;
+                        branchTable[executeStagePart1.instructionPC].numTimesNotTaken++;   
+                        flushPiplelines(p);
+                        resFlush(); 
+                    }
+                }
             }
 
             else if (instructionName == "CMP")
@@ -1138,6 +1220,7 @@ void fillInstructionMemory(fileReader &f, map<int,instructionMemory> &insMem)
 			insMem[address].insName = word;
 		}
 
+        insMem[address].instructionPC = address; 
 		address += 4;
 	}
 }
@@ -1157,6 +1240,20 @@ void regs(regFile &r, int regCount)
 	cout << "lr(top)" << "== " << r.lr.back() << endl;
 
 	cout << "------------------////-------------------" << endl;
+}
+
+void dispBranchTable()
+{
+    cout << "------------Branch Table Contents------------" << endl;
+
+    for (map<int,branchData>::iterator it=branchTable.begin(); it!=branchTable.end(); ++it)
+    {
+        cout << "instructionPC: " << it->first << endl;
+        cout << "num times taken: " << it->second.numTimesTaken << endl;
+        cout << "num times NOT taken: " << it->second.numTimesNotTaken << endl;
+        cout << "taking branch?: " << it->second.takeBranch << endl;
+        cout << "oldPC: " << it->second.oldPC << endl << endl;
+    }
 }
 
 void stat()
@@ -1182,7 +1279,6 @@ void stat()
 
 }
 
-
 void pipelineStatus(pipeline &p)
 {
     cout << "------------------Pipeline " << p.idNum << " Status-------------------" << endl;
@@ -1192,6 +1288,7 @@ void pipelineStatus(pipeline &p)
     cout << "decode stage 1 args:" << " " << p.decodeStagePart1.arg1 << " " << p.decodeStagePart1.arg2 << " " << p.decodeStagePart1.arg3 << endl;
     cout << "decode stage 2 args:" << " " << p.decodeStagePart2.arg1 << " " << p.decodeStagePart2.arg2 << " " << p.decodeStagePart2.arg3 << endl << endl;
     cout << "execute   insname: " << p.executeStagePart1.insName << endl;
+    cout << "instruction address: " << p.executeStagePart1.instructionPC << endl;
     cout << "execute stage 1 args:" << " " << p.executeStagePart1.arg1 << " " << p.executeStagePart1.arg2 << " " << p.executeStagePart1.arg3 << endl;
     cout << "execute stage 2 args:" << " " << p.executeStagePart2.arg1 << " " << p.executeStagePart2.arg2 << " " << p.executeStagePart2.arg3 << endl << endl;
     cout << "writeback insname: " << p.wbStage.insName << endl;
@@ -1202,8 +1299,6 @@ void pipelineStatus(pipeline &p)
 
 int tick(pipeline &p1,pipeline &p2)
 {
-
-    stat();
     p1.advance();
     p2.advance();
     p1.fetch();
@@ -1215,8 +1310,10 @@ int tick(pipeline &p1,pipeline &p2)
     p1.writeback();
     p2.writeback();
 
-    pipelineStatus(p1);
-    pipelineStatus(p2);
+    dispBranchTable();
+    // stat();
+    // pipelineStatus(p1);
+    // pipelineStatus(p2);
  
     return x | y;
 }
@@ -1225,9 +1322,9 @@ int step(std::map<int,int> &dataMem, std::map<int,instructionMemory> insMem, reg
 {
   	for (int i = 0; i< count; i++)
   	{
-        cout << "------------------////-------------------" << endl;
+        // cout << "------------------////-------------------" << endl;
   		int j = tick(p1,p2);
-        cout << "------------------////-------------------" << endl << endl;
+        // cout << "------------------////-------------------" << endl << endl;
 
   		if (j == 1) 
         {
