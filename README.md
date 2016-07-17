@@ -8,8 +8,6 @@ ISA documentation has been included for your use.
 
 To Build:
 
-	Run the Makefile provided:
-
 	make remake
 
 To Run:
